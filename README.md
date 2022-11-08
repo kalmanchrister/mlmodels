@@ -6,4 +6,4 @@ In developing these models the main focus has been on hyperparameter tuning of t
 
 This process has been itearated over a range of possible values.
 
-Grid search is time consuming. The jupyter notebook contained within has been provided with "likely" hyperparameters to speed up its running time. Finding these parameter values took a substantial effort. 
+Grid search is time consuming. The jupyter notebook contained within has been provided with streamlined set of "likely" hyperparameters to speed up its running time. This streamlining took a substantial effort. The current notebook will run rather quickly on x64 based processor. 
