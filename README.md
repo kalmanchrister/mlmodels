@@ -7,3 +7,5 @@ In developing these models the main focus has been on hyperparameter tuning of t
 This process has been itearated over a range of possible values.
 
 Grid search is time consuming. The jupyter notebook contained within has been provided with streamlined set of "likely" hyperparameters to speed up its running time. This streamlining took a substantial effort. The current notebook will run rather quickly on x64 based processor. 
+
+The general grid search was performed on servers at AWS in Ireland and quickly blew through our allowance. AWS took up contact with MO and got details of the work that MO was performing. Subsequently we were offered to apply for a grant which we did. MO has now been awarded enough credit to last for the next 6 - 8 months.
