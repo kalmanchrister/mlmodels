@@ -1,0 +1,2423 @@
+---
+title: "Um mat á stofnstærð karfa og grálúðu"
+always_allow_html: true
+output:
+  pdf_document: 
+  toc: true
+  toc_debt: 2
+  fig-width: 4
+  fig-height: 3
+  fig_caption: true
+  html_document:
+    df_print: paged
+  word_document: default
+  html_notebook: default
+---
+
+
+
+
+```{r,fj_rada_takamarkadur_med_falli, echo=FALSE}
+
+my_kable=function(x,max.rows=10, ...){
+  kable(x[1:max.rows,], ...)
+}
+```
+
+
+```{r setup, include=FALSE, fig.height=3,fig.height=3, fig.align='left'}
+
+options(Encoding="UTF-8")
+knitr::opts_chunk$set(message = FALSE)
+
+library(readr)
+library(lubridate)
+library(dplyr)
+library(tidyverse)
+library(selectr)
+library(readxl)
+library(rjson)
+
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library(parameters)
+library(gt)
+
+library(htmltools)
+
+library(magrittr)
+library(knitr)
+library(compareDF)
+library(arsenal)
+
+
+theme_set(theme_bw())
+library("sf")
+
+
+library("rnaturalearth")
+library("rnaturalearthdata")
+library(rgeos)
+
+library(ggridges)
+
+library(devtools)
+
+library(kableExtra)
+
+library(stargazer)
+
+library (lubridate)
+
+library (scales)
+
+library(bbl)
+library(fitdistrplus)
+
+
+
+```
+
+```{r data, include=FALSE}
+
+age_length_keys <- read_csv("C:\\Users\\Lenovo\\ownCloud\\Radgjof\\Ráðgjöf\\Bláa hagkerfið\\Hafró\\golden_redfish_data3\\redfish_age_length_keys.csv")
+length_dist_SMB <- read_csv("C:\\Users\\Lenovo\\ownCloud\\Radgjof\\Ráðgjöf\\Bláa hagkerfið\\Hafró\\golden_redfish_data3\\redfish_length_dist_SMB.csv")
+length_dist_SMH <- read_csv("C:\\Users\\Lenovo\\ownCloud\\Radgjof\\Ráðgjöf\\Bláa hagkerfið\\Hafró\\golden_redfish_data3\\redfish_length_dist_SMH.csv")
+length_dist_commercial <- read_csv("C:\\Users\\Lenovo\\ownCloud\\Radgjof\\Ráðgjöf\\Bláa hagkerfið\\Hafró\\golden_redfish_data3\\redfish_length_dist_commercial.csv")
+
+Samthjoppun_1920 <- read_excel("C:/Users/Lenovo/ownCloud/Radgjof/Ráðgjöf/Brim/Samthjoppun_1920.xlsx")
+
+ghalibut_length_dist_SMB <- read_csv("C:/Users/Lenovo/ownCloud/Radgjof/Ráðgjöf/Bláa hagkerfið/Hafró/greenland_halibut_data/ghalibut_length_dist_SMB.csv")
+ghalibut_length_dist_SMH <- read_csv("C:/Users/Lenovo/ownCloud/Radgjof/Ráðgjöf/Bláa hagkerfið/Hafró/greenland_halibut_data/ghalibut_length_dist_SMH.csv")
+ghalibut_length_dist_commercial <- read_csv("C:/Users/Lenovo/ownCloud/Radgjof/Ráðgjöf/Bláa hagkerfið/Hafró/greenland_halibut_data/ghalibut_length_dist_commercial.csv")
+
+```
+# Samantekt 
+
+## Inngangur
+Sú aðferð sem notuð hefur við mat og spá á stofnstærð karfa styðst við Gadget^[Gadget er tölfræðilíkan sem notað er til að herma eftir lífríki hafsins, http://www.hafro.is/gadget]. Ósamræmi hefur verið á milli mats leiðangra Hafrannsóknarstofnuar og líkansins í mikilvægum lengdarflokkum eins og sjá má  á myndinni hér að neðan.
+
+![Mynd 19.4.11 úr  ICES NWWG 2021, bls. 406. Punktar sýna mælingar úr vorleiðangri.](C:\Users\Lenovo\ownCloud\Radgjof\Ráðgjöf\Bláa hagkerfið\Greinar\pic 19.4.11 from nwwg 2021)
+
+Fjallað er um ósamræmið á bls. 371 í ICES NWWG 2021:
+
+"Model fit: In Figure 19.4.11 the length disaggregated indices are plotted against the predicted numbers in the stock as a time-series. This lack of fit between observed and predicted numbers between 33 and 40 cm is caused by data conflicts with survey indices of larger sizes and compositional data. There appears to be an internal conflict between indices of lengths of 42 cm and above and the large number of smaller fish that was observed in the survey few years earlier.The model results are therefore a compromise between different data sets, and it is not able to follow the amount of 30–40 cm redfish in recent years. The inability of the model to fitthe survey biomass in recent years has some support in the characteristics of the survey. Since 2003 most of the biomass in the Icelandic survey has been observed to be aggregated in very dense schools west of Iceland, caught on 5–10 stations every year. The size distribution in those schools is narrow and fish larger than 40 cm were rare.
+
+
+As the model converges slowly, predicted indices could change several years back when more
+data are added. However, it is not the magnitude of the residuals but rather the temporal
+pattern that is worrying (Figure 19.4.12). For 35–42 cm fish, the observed indices have been
+above predictions for 5-11 years. The indices for 41–50 cm fish do not show such temporal
+pattern although in recent years the observed indices have been below prediction. The correlation between observed and predicted is good for 19-34 cm fish.When looking at the temporal patterns,longevity of the fish must be considered. Positive residuals in size groups 33–38 cm inrecent years but negative for most other size groups, especially forfish smallerthan 30 cm, indicates narrower length distributions in the survey than predicted".
+
+
+## Verkefni Arev
+
+Bláa hagkerfið ehf. samdi við Arev í júní 2021 um að kanna þær tölfræðiaðferðir sem notaðar eru til að meta stofnstærð gullkarfa og grálúðu. Verkefninu var skipt í tvennt: 
+
+* karfi
+  * athugun á tilurð frumgagna
+  * frumgögn og gildi þeirra fyrir Gadget 
+
+* grálúða
+  * athugun á tilurð frumgagna
+  * frumgögn og gildi þeirra fyrir stofnstærð
+  
+
+
+
+Við könnunina fékk Arev aðgang að gagnasöfnum Hafrannsóknarstofnunar og aðstoð frá sérfræðingum hennar. 
+
+
+## Athugun á frumgögnum karfa og breytileika þeirra
+
+Arev fékk gögnin sem lýst er hér að neðan á tölvutæku formi ^[Arev og Bláa Hagkerfið afhentu Hafrannsóknastofnun yfirlýsingu um meðferð gagna 9. júlí sl . Gögnin bárust í þremur skömmtum:
+1. Gögn fyrir karfa, 16. júlí
+2. Endurbætt gögn fyrir karfa, 17. ágúst
+3. Endurbætt gögn fyrir karfa og gögn fyrir grálúðu 20. ágúst
+. Gögnin ná allt til þess er mælingar hófust.
+
+Arev skilaði skýrsludrögum til Hafrannsóknarstofnunar 30. ágúst. Sérfræðingar Hafrannsóknarstofnunar skiluðu athugasemdum sínum 25. september. Fundur var haldinn með sérfræðingum stofnunarinnar 27. september.
+
+
+
+
+Í lýsigögnum kemur eftirfarandi fram: 
+
+### Golden redfish (Sebastes norvegicus) data extraction
+
+
+**Datasets:** 
+
+1.	Length_dist_commercial.csv
+2.	Length_dist_SMB.csv
+3.	Length_dist_SMH.csv
+4.	Age_length_keys.csv
+5.  Ghalibut_length_commercial.csv
+6.  Ghalibut_length_SMB.csv
+7.  Ghalibut_length_SMV.csv
+8.  Wind-Direction_table.xlsx
+
+
+**Datasets 1, 2, and 3:**
+
+
+These contain the raw length samples from commercial sampling (1), the spring survey (2), and the autumn survey (3). The following columns are contained within each of these datasets:
+
+*Stod_id* – station ID.
+
+*Synis_id* – sample ID.
+
+*Data_source* - 'SEA' = commercial samples, 'SMB' = spring survey samples, 'SMH' = autumn survey samples.
+
+*Dags*, ar, and man – date, year and month.
+
+*Lat, lon* – the latitude and longitude at the beginning of the tow.
+*Tow_depth, tow_length* – the depth at the beginning of the tow (m), and the length of the tow in km.
+*Lengd* – fish length in cm.
+*Fjoldi* – the scaled count of fish per length.
+Scaling is done for each station.
+
+*hour*
+
+*wind_speed*
+
+*wind_direction*
+
+*bottom_temp*
+
+*tow_length*
+
+*tow_number*
+
+*gear_code*
+
+*vessel_id*
+
+
+
+*Maeldir, taldir* - 'maeldir' is the number of measured fish, 'taldir' is the number of fish counted. Maeldir + taldir = the total number of fish reported. Because not all fish are measured at each station, this information is used to scale the count which results in the 'fjoldi' column.
+
+**Dataset 4**:
+ Contains the age-length keys used in the assessment model. Data is provided from commercial samples (data_source = “SEA”), the spring survey (data_source = “SMB”), the autumn survey (data_source = “SMH”) and other MFRI research cruises (data_source = “OTHER”).
+
+**Note**, the autumn survey was not completed in 2011 due to industrial action.
+
+**Samsvarandi gögn um tog fengust fyrir grálúðu.**
+
+**Ítrekaðar tilraunir hafa verið gerðar til þess að fá sambærileg gögn um þýska leiðangurinn sem árlega fer um miðin við Grænland, en þær hafa ekki enn borið árangur. Ef þau gögn berast verða allar töflur og myndir skýrslunnar uppfærðar.**
+
+
+
+
+
+## Aðferðafræði Arev
+Aðferðafræði Arev byggir á því að athuga hvar og hvernig gögnum er safnað í haust- og vorleiðöngrum og hvort gögnin lýsi karfa- og grálúðustofnunum vel á því svæði sem um ræðir. Tæplega 600 tog eru í vorleiðöngrum, en um 380 í haustleiðöngrum. Um borð eru gerðar ýmsar mælingar á fiskinum eins og fram kemur í lýsigögnum. Athugunin beinist m.a. að því hvort sú aðferð að leggja saman öll tog og vigta þau í samræmi við gefna formúlu gefi góða tölfræðilega mynd af fjöldatölum karfans í aldurs- og lengdarflokkum. 
+
+Athugunin beinist jafnframt af því hvort unnt sé að toga á slóðum og velja tímabil þar sem meira fæst af styttri karfa og grálúðu, en talsverð íhaldsemi ríkir með núverandi togslóðir. 
+
+Athugað verður hvort Gadget gæti hentað við mat á grálúðustofninum.
+
+
+
+
+
+
+## Helstu niðurstöður
+
+### Karfi
+
+*Ósamræmi er á milli Gadget og mælinga leiðangra Hafrannsóknarstofnunar í mikilvægum lengdarflokka karfastofsins undanfarin ár. Mikilvægt er að ná samleitni sem fyrst aftur. Undanfarið hefur líkanið spáð talsvert minna af karfa á lengdarbilinu 35 til 42cm en fundist hefur í leiðöngrum Hafrannsóknarstofnunar. Líkanið hefur spáð meira af 42-50cm karfa en fundist hefur. Ágætt samræmi hefur verið fyrir karfa á lengdarbilinu 19-34cm.  Unnið er að uppfærslu Gadgetlíkansins til þess að auka samræmi á milli leiðangra og mats.*
+
+*Í athugasemdum sérfræðinga Hafrannsóknarstofnunar við skýrsludrög Arev, 27. september 2021 segir (bls.1): "Helsta vandamál líkansins er að líkanið nær ekki að fylgja þeirri aukningu sem varð í vísitölum á síðasta áratug eða svo. Sú útskýring sem best fellur að gögnunum er að miðað við það magn af smákarfa sem sást á árunum 1987-1992 í stofnmælingaleiðöngrum, þá er ekki innistæða fyrir þessari aukningu sem hefur sést undanfarin áratug. Þetta þýðir að nýliðun hafi verið að koma annarsstaðar frá eða ekki mælst."*
+ 
+ 
+*Aldurgreiningar haustleiðangra eru notaðar í Gadget. Aldursdreifingarnar virðast ekki eins nákvæmar og aldursdreifingar vorleiðangra (bls. 7).*
+
+
+*Fjöldatölur árganganna hliðrast með ártalinu þegar mælingarnar eru gerðar. Það sem vekur athygli er að í ákveðnum árgöngum virðist fiskum fjölga á árabilinu 2020- 2021. Sérstaklega má benda á lengdarbilið 34-40cm.  Það er ólíklegt að fjölgun verði með þessum hætti þar sem veitt er úr stofninum auk þess sem fiskar deyja af náttúrulegum orsökum.*
+*Erfitt er að skýra þetta með því að aldursgreining sé ónákvæm þar sem frekar gott samband er á milli lengdar og aldurs á þessu bili eins og sýnt er á mynd 4. Önnur skýring gæti verið að sýnin hafi verið tekin á mismunandi tímum dagsins í þessum leiðöngrum. Þetta verður kannað síðar í skýrslunni.*
+*Enn Önnur skýring er sú að sýnin frá öðru hvoru árinu endurspegli stofnstærðina ekki nægilega vel í þessum aldurshópum og virðist það vera í samræmi við ákveðna ósamræmi í Gadget á undanförnum árum (bls. 12). Loks kann karfi að koma inn á svæðið frá öðrum svæðum.*
+
+
+*Aldurslesningar haustleiðangurs eru notaðar í Gadget og virðist þetta vera enn ein skýringin á því hve erfiðlega það gengur að ná samleitni á milli mats og leiðangra í ákveðnum lengdarflokkum. Á árinu 2020 fannst frekar lítið af karfa í vor- og haustleiðöngrum. Í vorleiðangri 2021 fannst hins vegar töluvert meira af karfa. Fróðlegt verður að fylgjast með haustleiðangri 2021 og hvort mismunur á milli áranna 2020 og 2021 svipi til samsbærilegs mismunar á milli vorleiðangra (bls.19).*
+
+
+*Meira fannst af karfa sem var styttri en 33cm í vorleiðangri 2021 en árin á undan en þegar skoðað er um hve fá tog er að ræða og hve fá togin hafa verið undanfarin ár verður að hafa talsverðar áhyggjur af nýliðun næstu ára (bls. 28).*
+
+*Síðustu árin hafa verið á bilinu 4-7 tog á ári í haustleiðangri sem finna fleiri en 25 karfa sem eru styttri en 30cm. Tog í haustleiðangri eru fleiri en 300 talsins. Fjöldi toga í hverjum reit er því sem næst óbreytt á milli ára (bls. 48). Hlutfall toga sem finna styttri karfa er því mjög lágt. Verður að gjalda nokkurn varhug við stofnstærðarmælingu í þessum aldurshópi. Á mynd 1 í tækniskýrslu um gullkarfa 2021 á bls. 3 er stofninn á þessu aldursbili áætlaður við núllið og 95% öryggisbil lítið.*
+
+*Miðað við undirliggjandi gögn er ekki unnt að draga miklar ályktanir um fjölda karfa minni en 30cm í stofninum (bls. 26).*
+
+*Marktækur munur er á lengdardreifingu karfa fyrir Suðvestur- og Norðvesturlandi í vorleiðangri 2021 fyrir karfa sem eru lengri en 33cm skv. Kolmogorov Smirnov prófi (bls. 32).*
+
+*Meðalhitastig í haustleiðöngrum hefur hækkað um eina gráðu frá árinu 2000, úr 3,5 gráðum í 4,5 gráður (bls. 35).*
+
+*Minni karfar virðast forðast samneyti við stærri karfa. Skynsamlegt gæti verið að fylgja hitaskilum meira innan reita til þess að finna fleiri styttri karfa, en svo virðist sem þeir haldi sig á öðrum slóðum en stærri karfinn og í kaldari sjó (bls. 41).*
+
+*Karfi lengri en 19cm veiðist aðallega frá kl. 7 á morgnana til kl 19 á kvöldin. Dægursveiflan er á bilinu 3-4x (bls. 44).*
+
+*Ein leið til þess finna fleiri styttri karfa væri að draga á þeim stöðum þar sem líklegast er að þeir finnist  eftir kl. 19 á kvöldin og fyrir kl. 10 á morgnana. Mynd 39 sýnir að  dægursveiflan virðist meiri en 4x í fjölda fyrir styttri karfana.  Með því að draga á nóttunni mætti hugsanlega fjölga togum með styttri karfa töluvert. *
+
+*Dægursveiflan virðist töluvert meiri í þessum tölum en hingað til hefur verið áætlað að hún sé um 1,6x-2x, sjá t.d. Figure B.3.7 í Stock annex). Stuðlarnir á þeirri mynd voru reiknaðir úr tölum úr vorleiðöngrum 1985 - 2011, en virðast hafa tekið talsverðum breytingum.* 
+
+*Fróðlegt væri að draga á sömu slóðum að deginum til til þess að fá betri sýni hjá stærri karfa auk samanburðar.*
+
+
+*Með betri upplýsingum um styrk yngri árganga auk betri upplýsinga um aðra árganga (m.a. frá flotanum) er líklegt að Gadget sýni meiri samleitni í fleiri árgögnum og að ráðgjöf verði markvissari (bls. 45).*
+
+*Í ICES NWWG 2021 skýrslunni á bls. 367 er bent á að á árinu 2020 og undanfarin ár hafi veiðst um 5% meira en sem nam hámarksúthlutun vegna "villu" við framkvæmd fiskveiðistjórnunarkerfisins sem leyfir tilfærslur á afla á milli tegunda. *
+
+*Vegna þeirra miklu óvissu sem er um stofnstærð karfa um er mkilvægt að farið verði eftir ráðgjöf (bls. 13).*^[Mjög auðvelt er að veiða karfa um þessar mundir. Þess utan er karfi mjög oft meðafli. Þess vegna er nánast öruggt að ævinlega verði veitt 5% umfram ráðgjöf.]
+
+*Á bls. 374 í ICES NWWG 2021 skýrslunni kemur fram að ekki hafi verið til fjármunir í ICES kerfinu til þess að halda áður ákveðinn "benchmark" fund á árinu 2020. Fundurinn er nú áætlaður á árinu 2023. Þetta glýtur að vera óheppilegt í ljósi þeirrar óvissu sem eru um stofnstærð karfa um þessar mundir.* 
+
+### Grálúða
+
+
+*Ósamræmis gætir milli mælinga haustleiðangra áranna 2016 og 2017 annars vegar og 2019 og 2020 hinsvegar þar sem grálúðum virðist fjölga í tilteknum árgöngum þrátt fyrir veiðar. Ekki er ósennilegt að þetta sé vegna þess hve sýnin eru fá (bls. 51).*
+
+*Enn meira ósamræmis virðist gæta í mælingum vorleiðangra áranna 2016 til 2021 en í haustleiðöngrum. Enn færri sýni eru tekin í vorleiðöngrum en haustleiðöngrum og kemur þetta ósamræmi því lítið á óvart (bls. 52).*
+
+
+*Með því að fjölga mælingum verulega mætti nota öflugra líkan eins og Gadget til þess að kortleggja stofninn mun betur en nú er gert (bls.53).*
+
+
+*Grálúða virðist ekki vera á togslóðum leiðangra (bls.54 - 55).*
+
+*Meðalhitastig í togum með grálúðu í vorleiðöngrum hefur hækkað úr 2,5 gráðum árið 2010 í tæplega 3,3 gráður á árinu 2021. Hugsanlega gæti verið betra að toga nær hitaskilum til að finna meira af grálúðu (bls. 58-59).*
+
+
+
+### Almennt
+*Áhugavert væri ef myndir væru teknar af hverjum karfa og hverri grálúðu hjá flotanum enda fiskurinn á færiböndum og auðvelt með svipaðri tækni og notuð er við flokkun á færiböndum í frystihúsunum að taka og greina myndir með nútímatækni. Með þessu mætti finna lengd og stærð, ummál og jafnvel kyngreina  og hugsanlega greina ættkvíslir. Auðvelt ætti að koma þessu við hjá þeim sem stunda veiðar.*
+
+*Flotinn ætti jafnframt að safna umhverfisbreytum svo sem hitastigi, vindhraða og þess háttar.*
+
+*Nýliðun í karfastofninum á sér fyrst og fremst stað með sprengingum í fjölda seiða sem koma fram á 10 til 20 ára fresti. Langt er liðið því að þetta gerðist síðast. Óútskýrð fjölgun í eldri árgöngum er hugsanlega vegna nýliðunnar sem hugsanlega átti sér stað fyrir meira en 10-15 árum sem annað hvort hefur komið annars staðar frá eða greindist ekki.*
+
+*Þar til þessi gáta hefur verið leyst er óvarlegt að ganga of nærri kynþroska karfa.*
+
+\newpage
+
+# Karfi
+
+## Lengd og aldur
+
+```{r,fjoldi_maelinga, echo=FALSE, warning=FALSE,error=FALSE, fig.cap="Fjöldi karfa sem notaður hefur verið til að búa til aldurs lengdar lykil"}
+
+age_length_keys %>% 
+  group_by(ar) %>% 
+  summarise (fjoldi_maelinga=n()) %>% 
+ggplot(mapping=aes(x=ar, y=fjoldi_maelinga))+
+  geom_point()+
+  geom_smooth(level=0.95)+
+  xlab("ár")+
+  ylab("fjöldi fiska")
+```
+
+
+*Á myndinn sést fjöldi aldursgreindra karfa í haustleiðangri.  Á árinu 2020 voru 2.439 karfar aldursgreindir eða nokkuð færri en undanfarin ár. Erfiðlega gengur að ná samleitni í Gadget sbr. umfjöllun á bls. 370 og 371 á í ICES NWWG 2021.*
+
+*Aldurgreiningar haustleiðangra eru notaðar í Gadget. Aldursdreifingar haustdreifinga virðast ekki eins nákvæmar og aldursdreifingar vorleiðangra.*
+
+
+\newpage
+
+
+```{r, aldur_lengd, echo=FALSE,warning=FALSE, error=FALSE, fig.cap="Dreifing aldurs og lengdar skv. mælingum í haustleiðangri 2020"}
+
+age_length_keys %>% 
+  filter(ar>=2020) %>% 
+  ggplot(mapping=aes(x=aldur,y=lengd))+
+  geom_boxplot(mapping=aes(group=cut_width(aldur,1)), notch=TRUE)+
+  geom_smooth(aes(color=as.factor(ar)))+
+  labs(color="ár")
+
+```
+
+*Arev fékk mælingar á aldri og lengd karfa frá árinu 1973 að telja. Á myndinni er kassarit fyrir mælingar ársins 2020.  Öfgagildi fyrir einstaka árganga voru yfirleitt færri en fimm.  Fleygarnir í kassaritinu á myndinni sýna 95% öryggisbil.* 
+
+
+\newpage
+
+
+```{r aldur_lengd2, echo=FALSE,warning=FALSE, error=FALSE, fig.cap="Dreifing aldurs og lengdar skv. mælingum í haustleiðöngrum áranna 2015 til 2020"}
+
+age_length_keys %>% 
+  filter(ar>=2015) %>% 
+  ggplot(mapping=aes(y=aldur,x=lengd))+
+  geom_boxplot(mapping=aes(group=cut_width(aldur,1)), notch=TRUE)+
+  geom_smooth(aes(color=as.factor(ar)))+
+  labs(color="ár")
+
+```
+
+
+
+
+Gerðar voru nokkrar tilraunir til að tengja saman aldur og lengd með aðhvarfsgreiningu. Sæmileg niðurstaða fékkst með því að tengja saman lógariþma aldursins við lengd karfa. 
+
+
+```{r, linear_regression, echo=FALSE, warning=FALSE, error=FALSE}
+age_length_keys24 <-
+  age_length_keys %>% 
+  filter(aldur<=24)
+
+lmage = lm(lengd~log(aldur), data = age_length_keys24) 
+
+mp<-model_parameters(lmage, ci=0.95, data=df, eta_squared="partial")
+
+print_md(mp, caption = "Taflan sýnir niðurstöðu línulegrar aðhvarfsgreiningar")
+
+```
+
+
+
+*$R^{2}/R^{2}$-aðlagað er einungis 0.62. Kannað var hvort unnt væri  að meta þetta fyrir karfa yngri en 24 ára en skýringargildið lagaðist ekki mikið. Gunnar Stefánsson fyrrum aðstoðarforstjóri Hafrannsóknarstofnunar  sýndi að nota mætti vaxtarlíkan þar sem tekið væri tillit til lengdardreifingar innnan árgangs til þessa meta fjölda í hverjum aldurshóp, sjá t.d. bls. 22 í STOCK ANNEX. Þetta er í raun kjarninn í Gadget líkaninu þar sem hámörkun á sennileika fjöldatölu hvers árgangs er metin. * 
+
+*Vaxtarlíkanið reiðir sig á nokkra stika. Í áranna rás hafa verið nokkrir stórar árgangar sem hafa aðveldað mat á þessum stikum. Nú eru komin stór skörð í þessa árganga aðallega vegna veiða og því erfiðara að meta stikana.* 
+
+
+*Í einfaldri greiningu Arev er einkum notast við mikilvæg lengdarbil sem eru í samræmi við lengdarbil í tækniskýrslu vegna karfa 2021, sjá t.d. mynd 1 á bls. 2.*
+
+* 4-11cm - smáfiskur sem virðist ætla að lifa af og koma að nýliðun stofnsins, 1-2 ára karfi
+*  <19cm
+*  <30cm - þessi hópur inniheldur nýliðana, eldri en 5 ára
+* =>33cm,  kynþroska eða næstum kynþroska karfi
+* =>40cm, eldri karfi 
+
+
+
+*Myndgreiningu má nota til að meta ummál karfa með þríhyrningaskiptingu líkt og gert er í sumum frystihúsum. Fróðlegt væri að kanna tengsl ummáls og aldurs og hvort unnt væri að nýta slíkar upplýsingar í Gadget.*
+
+
+
+\newpage
+## Lengdardreifing karfa í leiðöngrum undanfarinna ára
+
+```{r, fjöldi_lengd2,echo=FALSE,warning=FALSE, error=FALSE, fig.cap ="Fjöldi karfa í vorleiðangri árin 2020 - 2021 í hverjum flokki á lengdarbilinu 19-45cm"} 
+
+length_dist_SMB %>%
+  group_by(lengd, ar) %>% 
+  summarise(n=sum(fjoldi)) %>% 
+  filter(ar>=2020,lengd>19, lengd<=49) %>% 
+  ggplot( mapping = aes(x=lengd, y= n, fill=as.factor(ar))) +
+  geom_col(position = "dodge2")+
+  labs(fill="ár")+
+  ylab("fjöldi mælinga")
+
+#summary(length_dist_SMB)
+```
+
+\newpage
+
+```{r, hlutfall_fjöldi_lengd3, echo=FALSE, warning=FALSE,error=FALSE, message=FALSE, fig.cap = "Hlutfallslegur fjöldi karfa í hverjum lengdarflokki í vorleiðöngrum 2020 og 2021"}
+
+length_dist_SMB%>%
+  group_by(lengd, ar) %>% 
+  summarise(n=sum(fjoldi)) %>% 
+  filter(ar>=2020,lengd>19,lengd<=49 ) %>% 
+  group_by(ar) %>% 
+  mutate(sumn=sum(n)) %>% 
+  mutate(hlutfall=n/sumn) %>% 
+  ggplot( mapping = aes(x=lengd, y= hlutfall, fill=as.factor(ar))) +
+  geom_col(position = "dodge2")+
+  labs(fill="ár")+
+  ylab("hlufall mælinga")
+```
+
+
+*Fjöldatölur árganganna hliðrast með ártalinu þegar mælingarnar eru gerðar. Það sem vekur athygli er að í ákveðnum árgöngum virðist körfum fjölga á árabilinu 2020- 2021. Sérstaklega áhugavert er að skoða lengdirnar á 34-40cm lengdarbilinu.  Þetta er er harla ólíklegt þar sem veitt er úr stofninum auk þess sem karfar deyja af náttúrulegum orsökum.*
+
+*Erfitt er að skýra þetta með því að lengdarmælingin sé ónákvæm þar sem hún er frekar nákvæm hjá þessum aldurshópum eins og sést í figure 4 hér að framan. Önnur skýring gæti verið að sýnin hafi verið tekin á mismunandi tímum dagsins í þessum tveimur leiðöngrum. Þetta verður kannað síðar í skýrslunni.*
+
+*Ein skýringin er sú að sýnin frá öðru hvoru árinu endurspegli stofnstærðina ekki nægilega vel í þessum aldurshópum og virðist það vera í samræmi við ákveðinn óstöðugleika sem hefur verið í keyrslu Gadget á undanförnum árum.*
+
+*Loks getur verið að karfi komi og fari inn og út af svæðinu, t.d. frá Grænlandi sbr. athugasemd sérfræðinga Hafrannsóknarstofnunar( bls. 4).*
+
+
+\newpage
+
+```{r, fjöldi_lengd,echo=FALSE,warning=FALSE, error=FALSE, fig.cap ="Fjöldi karfa í haustleiðangri árin 2018 og 2019 í hverjum flokki á lengdarbilinu 25-45cm"} 
+
+length_dist_SMH %>%
+  group_by(lengd, ar) %>% 
+  summarise(n=sum(fjoldi)) %>% 
+  filter(ar>=2018,ar<=2019, lengd>25 & lengd<=49) %>% 
+  ggplot( mapping = aes(x=lengd, y= n, fill=as.factor(ar))) +
+  geom_col(position = "dodge2")+
+  labs(fill="ár")+
+  ylab("fjöldi mælinga")
+
+#summary(length_dist_SMB)
+```
+
+
+*Á myndinni sem sýnir fjöldatölur fyrir haustleiðangra 2018 og 2019 virðist vera fjölgun i eldri árgöngum á milli ára sem er svipað og kom fram í myndunum hér að framan. Þessi þróun gekk svo til baka í haustleiðangri 2020. Niðurstaða hans stangaðist mjög á við niðurstöðu vorleiðangurs 2021.*
+
+*Svo virðist sem sýnin sem tekin voru í vorleiðangri 2020 og haustleiðöngrum 2018 og 2020 hafi ekki endurspeglað raunverulegt ástand í sjónum jafnvel og samsvarandi sýni árin á undan.*
+
+*Það er viðbúið að niðurstöður þessara leiðangra hafi valdið aðferðinni sem Gadget notar miklum örðugleikum.*
+
+*Rétt er að slá hér varnagla, en verið getur að sýnin sem tekin voru í vorleiðangri 2021 sem virðast sýna mun meira af karfa en haustleiðangrar 2018, 2020 og vorleiðangur 2020. Verið getur að vorleiðangur hafi fyrir tilviljun fundið óvenju mikið af karfa.*
+
+
+*Í ICES NWWG 2021 skýrslunn bls. 265 er bent á að á árinu 2020 og undanfarin ár hafi veiðst um 5% meira en sem nam hámarksúthlutun úthlutun vegna "villu" við framkvæmd fiskveiðistjórnunarkerfisins sem leyfir tilfærslur á afla á milli tegunda. *
+
+*Vegna þeirra óvissu sem er um stofnstærð karfa er mikilvægt að farið verði eftir ráðgjöf.*
+
+
+
+
+\newpage
+## Fjöldi karfa í leiðöngrum undanfarin ár
+
+
+```{r ,fjoldi_vor,echo=FALSE, warning=FALSE,error=FALSE,fig.cap="Mynd sem sýnir uppreiknaðan fjölda fisks sem talinn er eða mældur í vorleiðangri frá 2000 að telja", warning=FALSE}
+length_dist_SMB %>% 
+  filter(ar>=2000) %>% 
+  mutate(reported=taldir+maeldir) %>% 
+  group_by(ar,stod_id,reported) %>%  
+  summarise() %>% 
+  group_by(ar) %>% 
+  summarise(sum=sum(reported, na.rm=TRUE) ) %>% 
+  ggplot(mapping=aes(x=ar, y=sum))+
+  geom_point()+
+  geom_smooth(level=0.95)+
+  ylab("fjöldi fiska")+
+  xlab("ár")
+
+```
+
+
+
+*Eins og myndin sýnir hafa veiðst ríflega 200 þúsundur karfar undanfarin ár í vorleiðangri.  Árin 2018 og 2019 fundust eitthvað færri karfar (170.000-190.000) en meira magn virðist hafa fundist í vorleiðangri ársins 2021 eða um 210 þúsund þúsund. Allt er þetta þó innan skekkjumarka.*
+
+\newpage
+
+```{r ,fjoldi_vor_minni_fiskar,echo=FALSE, warning=FALSE,error=FALSE,fig.cap="Mynd sem sýnir uppreiknaðan fjölda karfa sem talinn er eða mældur í vorleiðangri frá árinu 2000 að telja og sem eru minni en 30cm", warning=FALSE}
+length_dist_SMB%>% 
+  filter(ar>=2000) %>% 
+  filter(lengd<=30,lengd>0) %>% 
+  mutate(reported=fjoldi) %>% 
+  group_by(ar,reported,stod_id) %>% 
+  summarise() %>% 
+  group_by(ar) %>% 
+  summarise(sum=sum(reported),na.rm=TRUE) %>% 
+  ggplot(mapping=aes(x=ar, y=sum))+
+  geom_point()+
+  geom_smooth(level=0.95)+
+  xlab("ár")+
+  ylab("fjöldi karfa")
+```
+
+
+
+*Frá árinu 2016 hefur fjöldi karfa undir 30cm verið undir 10 þúsund í vorleiðöngrum Hafrannsóknarstofnunar. Þetta er markvert minna en var á fyrsta áratug aldarinnar. Sambærileg tala var þannig á bilinu 30 - 40 þúsund á fyrsta áratug aldarinnar.*
+
+\newpage
+
+## Lengdardreifing í einstökum togum
+
+
+
+```{r,fiskar_i_togi, echo=FALSE,warning=FALSE, error=FALSE, fig.cap="Dreifing lengdar úr ýmsum togum í vorleiðangri 2021"}
+
+length_dist_SMB %>% 
+  filter(ar==2021) %>% 
+  arrange(synis_id) %>% 
+  filter(taldir+maeldir<100) %>% 
+  filter(synis_id>=513049 & synis_id<=513054) %>% 
+  ggplot(mapping=aes(x=lengd, weight=fjoldi)) +
+           geom_histogram(binwidth = 1)+
+           geom_density(aes(y=5*..count..))+
+    facet_grid(.~synis_id)+
+    ylab("fjöldi")+
+    theme(axis.text.x=element_text(angle=45,hjust=1))+
+    labs(fill="fjöldi karfa")+
+    scale_y_continuous(breaks=pretty_breaks())
+```
+
+
+
+
+
+
+*Á myndinni að framan eru 5 tog tekin af handahófi úr vorleiðangri ársins 2020.  Myndin sýnir að lengdardreifing úr hverju togi virðist nokkuð tilviljunarkennd og að oftast komi frekar fáir karfar úr hverju togi. Í flestum lengdarbilum er enginn eða einn karfi. Sýni 513053 er undantekning.*
+
+\newpage
+## Lengdardreifing í einstökum togum, stærri tog
+
+
+```{r,fiskar_i_togi2, echo=FALSE,warning=FALSE, error=FALSE, fig.cap="Dreifing lengdar úr ýmsum togum i vorleiðangri 2021"}
+
+length_dist_SMB %>% 
+  filter(ar==2021) %>% 
+  arrange(synis_id) %>% 
+  filter(synis_id==513283 | synis_id==513483 |synis_id==513096|synis_id==513112|synis_id==513121) %>% 
+  ggplot(mapping=aes(x=lengd, weight=fjoldi)) + 
+           geom_histogram(binwidth = 1)+
+           geom_density(aes(y=200*..count..))+
+    facet_grid(.~synis_id)+
+    ylab("fjöldi")+
+    theme(axis.text.x=element_text(angle=45,hjust=1))+
+    labs(fill="fjöldi karfa")+
+    scale_y_continuous(breaks=pretty_breaks())
+```
+
+*Á þessa mynd voru valin tog með fleiri körfum. Þrátt fyrir það er algengt að engin fiskur komi á tilteknum lengdarbilum þótt fleiri karfar komi í lengdarbilin á milli 30 og 40cm. Dreifingarnar líta samt sennilega út.*
+
+\newpage
+## Heildarlengdardreifing í vorleiðöngrum frá 2015 að telja
+
+```{r fjoldi_fiska_lengd_vor, echo=FALSE, error=FALSE, fig.cap="Lengdardreifing í vorleiðöngrum", warning=FALSE}
+
+
+
+length_dist_SMB %>% 
+  filter(ar>=2015) %>% 
+  filter(lengd<=49, lengd>19) %>% 
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=vegid, group=ar,fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity",scale=1, rel_min_height=0.01)+
+  labs(fill="Fjöldi karfa í
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(19,60)
+```
+
+
+*Myndin að framan sýnir lengdardreifingu í vorleiðöngrum frá 2015 að telja. Þrátt fyrir að oftast séu frekar fáir fiskar í hverju togi virðist summa lengdardreinfinga fyrir hvert ár vera nokkuð skipuleg og stærri árgangarnir virðast hliðrast eðlilega milli ára eins og ráð er fyrir gert í flestum líkönum (þetta sést á myndum 12-14 þar sem sýnin hafa verið lögð saman).*
+
+*Vakin er athygli á því hve ólík dreifing var í vorleiðöngrum 2020 og 2021. Þannig virðast ákveðnir árgangar hafa eflst á milli ára sem getur ekki átt sér stað nema fiskur komi annars staðar að.*
+
+\newpage
+## Heildarlengdardreifing í haustleiðöngrum frá 2015 að telja
+
+```{r fjoldi_fiska_lengd_haust, echo=FALSE, error=FALSE, fig.cap="Lengdardreifing í haustleiðöngrum", warning=FALSE}
+
+length_dist_SMH %>% 
+  filter(ar>=2015) %>% 
+  filter(lengd<=49, lengd>19) %>% 
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=vegid, group=ar, fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity", scale=1, rel_min_height=0.01)+
+  labs(fill="Fjöldi karfa í 
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(19,60)
+```
+
+
+
+*Í haustleiðangri 2020 fannst lítið af karfa og aldursdreifingin var ekki eins skipuleg og árin á undan. Þetta má sjá með því að bera myndina frá haustleiðangri 2020 saman við myndina frá vorleiðangri 2021 (á mynd 12). Óvarlegt kann því að vera að draga of miklar ályktanir af fjöldatölunum sem voru reiknaðar í haustleiðangrinum. *
+
+*Aldurslesningar haustleiðangurs eru notaðar í Gadget og virðist þetta vera ein skýringin á því hve erfiðlega það gengur að ná samleitni í ákveðnum stærðarflokkum hjá Gadget um þessar mundir. Á árinu 2020 fannst lítið af karfa í vor- og haustleiðöngrum. Í vorleiðangri 2021 fannst hins vegar töluvert meira af karfa. Fróðlegt verður að fylgjast með haustleiðangri 2021 og hvort mismunur á milli 2020 og 2021 svipi til samsvarandi mismunar vorleiðangra.*
+
+\newpage
+## Heildarlengdardreifing karfa hjá flotanum
+
+```{r fjoldi_fiska_lengd_flotinn, warning= FALSE,echo=FALSE, error=FALSE, fig.cap="Lengdardrefing flotans undanfarin ár", warning=FALSE}
+
+length_dist_commercial %>% 
+  filter(ar>=2015) %>% 
+  filter(lengd<=49, lengd>19) %>% 
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=vegid, group=ar, fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity", scale=1, rel_min_height=0.01)+
+  labs(fill="Fjöldi karfa í 
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(19,60)
+```
+
+
+
+
+*Síðustu árin hefur þeim sýnum sem tekin hafa verið hjá flotanum fækkað. Fæst voru þau á árinu 2020. Fram kemur í tækniskýrslu um gullkarfa 2021 að það hafi m.a. verið vegna Covid.*
+
+*Miklu skiptir að koma mælingum flotans sem fyrst í betra horf.*
+
+
+
+*Einkar fróðlegt verður að sjá niðurstöðu haustleiðangurs 2021 hvað þetta varðar.*
+
+
+\newpage 
+
+## Uppsöfnuð dreifing fyrir norðvestan Ísland
+
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE,fig.cap="Myndin sýnir breytingar á uppsafnaðri aldursdreifingu á milli haustralls 2020 og vorralls 2021" }
+nv2020H<-
+  length_dist_SMH%>% 
+  filter(lengd>4) %>% 
+  filter(ar==2020) %>% 
+  filter(lat>64.5, lon< -20)
+
+nv2021B<-
+  length_dist_SMB %>% 
+  filter(lengd>20,lengd<44) %>% 
+  filter(ar==2021) %>% 
+  filter(lat>64.5, lon< -20)
+
+ks_nv_2020<-
+  nv2020H%>% 
+  group_by(lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  mutate(per = sum_fjoldi/sum(sum_fjoldi),fj=sum(sum_fjoldi)) %>% 
+  mutate(cum_per= cumsum(per)) 
+
+ks_nv_2021<-
+  nv2021B%>% 
+  group_by(lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  mutate(per = sum_fjoldi/sum(sum_fjoldi),fj=sum(sum_fjoldi)) %>% 
+  mutate(cum_per= cumsum(per)) 
+
+ks<- inner_join(ks_nv_2020, ks_nv_2021,by="lengd")
+
+ ks <- 
+   ks %>% 
+   mutate(d=abs(cum_per.x-cum_per.y)) 
+ 
+
+ ks %>% 
+   ggplot(aes(x=lengd) )+
+   geom_line(aes(y=cum_per.x, color="Nv2020H"))+
+   geom_line(aes(y=cum_per.y, color="Nv2021B"))+
+   labs(colour="ár")+
+   ylab("cumulative distributions")
+ 
+ 
+# statistic=max(ks$d)
+# fjn <- max(ks_nv_2020$fj)
+# fjm <- max(ks_nv_2021$fj)
+ 
+#format(fjm, digits=5)
+#format(fjn, digits = 5)
+
+#test=1.2*sqrt((fjn+fjm)/(fjn*fjm))
+
+
+
+#format(statistic, digits = 2)
+#format (test, digits=2)
+
+```
+
+
+*Athyglisvert er að í stað þess að haustdreifingin hliðrist frá vinstri í vordreifinguna þá hliðrast hún frá hægri. Þetta er ekki í samræmi við að sáralítil nýliðun er til staðar og fiskurinn er að eldast.*
+
+\newpage
+
+```{r, fig.cap="Myndin sýnir uppsafnaða dreifingu karfa úr vorleiðöngrum sem er 20-40cm á árunum 2011 - 2021", echo=FALSE, warning=FALSE, error=FALSE}
+nv<-
+  length_dist_SMB%>% 
+  filter(lengd>20,lengd<40) %>% 
+  filter(ar>=2011) %>% 
+  filter(lat>64.5, lon< -20)
+
+
+
+  
+  nv%>% 
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  arrange(ar,lengd) %>% 
+  summarise(ar, lengd, 
+  sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum)) %>% 
+  ggplot(aes(x=lengd) )+
+  geom_line(aes(y=per, group=as.factor(ar), colour=as.factor(ar))) +
+  labs(colour="ár")+
+  ylab("uppsöfnuð dreifing")
+  
+
+  
+```
+
+
+
+*Dreifing fyrri ára hliðrast með reglulegum hætti til hægri yfir í dreifingar næstu ára. Sama regla er ekki á mynstrinu fyrir haustleiðangrana.*
+
+
+\newpage 
+
+```{r, fig.cap="Myndin sýnir uppsafnaða dreifingu karfa úr haustleiðöngrum sem er 20-40cm á árunum 2015 - 2021", echo=FALSE, warning=FALSE, error=FALSE}
+nv<-
+  length_dist_SMH%>% 
+  filter(lengd>20,lengd<40) %>% 
+  filter(ar>=2016) %>% 
+  filter(lat>64.5, lon< -20)
+
+
+
+  
+  nv%>% 
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  arrange(ar,lengd) %>% 
+  summarise(ar, lengd, 
+  sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum)) %>% 
+  ggplot(aes(x=lengd) )+
+  geom_line(aes(y=per, group=as.factor(ar), colour=as.factor(ar))) +
+  labs(colour="ár")+
+  ylab("uppsöfnuð dreifing")
+  
+```
+
+
+*Minni regla er á haustdreifingu, enda um 380 stöðvar í  haustleiðangrinum, en tæplega 600 í vorleiðangrinum. Þannig falla árin 2016 og 2017 saman og 2018 og 2019 sem er ekki eðlilegt þar sem eðlilegra hefði verið hliðrun til hægri eins og í vorleiðöngrum.*
+
+\newpage
+
+
+```{r, fig.cap="Myndin sýnir uppsafnaða dreifingu karfa úr vorleiðöngrum sem er 20cm eða styttri á árunum 2015 - 2021", warning=FALSE, echo=FALSE, error=FALSE}
+nv<-
+  length_dist_SMB%>% 
+  filter(lengd<25) %>% 
+  filter(ar>=2011) %>% 
+  filter(lat>64.5, lon< -20)
+
+
+  
+  nv%>% 
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  arrange(ar,lengd) %>% 
+  summarise(ar, lengd, 
+  sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum)) %>% 
+  
+  ggplot(aes(x=lengd) )+
+  geom_line(aes(y=per, group=as.factor(ar), colour=as.factor(ar))) +
+  labs(colour="ár")+
+  ylab("uppsöfnuð dreifing ")
+  
+
+```
+
+
+\newpage
+
+```{r, echo=FALSE, warning=FALSE, fig.cap="Fjöldi toga í haustleiðöngrum með styttri karfa (<=30cm) sem veiddust á árunum 2010 og 2020"}
+
+
+length_dist_SMH%>% 
+  filter(ar==2010|ar>=2020) %>%
+  filter(lengd<=30) %>% 
+  group_by(synis_id, ar=ar) %>%  
+  summarise(sum=sum(fjoldi,na.rm=TRUE))  %>% 
+  mutate(sum = as.integer(round(sum,digits=0))) %>% 
+  filter(sum>0) %>% 
+  ggplot(mapping=aes(x=cut_width(sum,30), fill=cut_width(sum,30)))+
+  geom_bar()+
+      facet_wrap(.~ar, ncol=2)+
+      theme(axis.ticks.x=element_blank(),
+                    axis.text.x = element_blank())+
+      labs(fill="fjöldi karfa í hverju 
+togi liggur á bilinu:")+
+      xlab("bil")+
+      ylab("fjöldi toga á hverju bili")
+
+
+```
+
+
+ 
+
+\newpage
+
+## Fjöldi toga í haustleiðöngrum
+
+```{r, echo=FALSE, warning=FALSE,fig.cap="Fjöldi toga þar sem 25 fiskar eða fleiri sem voru styttri en 30cm  veiddust í haustleiðöngrum frá árinu 2018 að telja."}
+
+
+length_dist_SMH %>%
+  filter(ar>=2018) %>% 
+  filter(lengd<=30) %>% 
+  group_by(stod_id,ar) %>% 
+  summarise(fjoldi_fiska=sum(fjoldi, na.rm=TRUE)) %>% 
+  filter(fjoldi_fiska>25) %>% 
+  ggplot(mapping = aes(x =as.factor (stod_id), y=fjoldi_fiska)) +
+    geom_col(mapping=aes(fill=as.factor(ar)),
+             position = "dodge2")+
+    theme(axis.ticks.x=element_blank(),
+                    axis.text.x = element_blank())+
+    labs(fill="ár")+
+    xlab("tog")+
+    ylab("fjöldi fiska")
+
+
+
+```
+
+
+*Síðustu árin hafa á bilinu 4-7 tog á ári í haustleiðangri fundið fleiri karfa en 25 sem eru styttri en 30cm en alls eru togin tæplega 380 talsins. Hlutfall toga sem finna styttri karfa er mjög lágt. Verður því að gjalda nokkurn varhug við stofnstærðarmælingu í þessum aldurshópi. Á mynd 1 í tækniskýrslu um gullkarfa 2021 bls. 2 er stofninn á þessu aldursbili áætlaður við núllið og 95% öryggisbil lítið.*
+
+*Miðað við undirliggjandi gögn er ekki unnt að draga miklar ályktanir um fjölda karfa á þessu aldursbili.*
+
+\newpage
+
+## Fjöldi toga í vorleiðöngrum
+
+```{r, echo=FALSE, warning=FALSE,fig.cap="Þessi mynd sýnir fjölda toga þar sem 100 fiskar eða fleiri sem voru minni en 30cm veiddust í vorleiðöngrum áranna frá 2018."}
+
+
+length_dist_SMB %>%
+  filter(ar>=2018) %>% 
+  filter(lengd<=30) %>% 
+  #filter(lat<64.5, lon> -20) %>% 
+  
+  group_by(stod_id,ar) %>% 
+  summarise(fjoldi_fiska=sum(fjoldi, na.rm=TRUE)) %>% 
+  filter(fjoldi_fiska>100) %>% 
+  ggplot(mapping = aes(x =as.factor (stod_id), y=fjoldi_fiska)) +
+    geom_col(mapping=aes(fill=as.factor(ar)),
+             position = "dodge2")+
+    theme(axis.ticks.x=element_blank(),
+                    axis.text.x = element_blank())+
+    labs(fill="ár")+
+    xlab("tog")+
+    ylab("fjöldi fiska")
+
+
+```
+
+
+
+
+\newpage
+## Fjöldi toga með styttri karfa (<=30cm) í vorleiðöngrum
+
+
+```{r, echo=FALSE, warning=FALSE, fig.cap="Þessi mynd sýnir fjölda toga í vorleiðöngrum þar sem fleiri en 25 fiskar styttri en 30cm veiddust"}
+
+
+length_dist_SMB%>% 
+  filter(ar>=2015) %>%
+  filter(lengd<=30) %>% 
+  group_by(synis_id, ar=ar) %>% 
+  summarise(sum=sum(fjoldi, rm.na=TRUE))  %>% 
+  filter(sum>=25) %>% 
+  mutate(sum = as.integer(round(sum,digits=0))) %>% 
+  filter(sum>0) %>% 
+  ggplot(mapping=aes(x=cut_width(sum,50), fill=cut_width(sum,50)))+
+  geom_bar()+
+      facet_wrap(.~ar, ncol=2)+
+      theme(axis.ticks.x=element_blank(),
+                    axis.text.x = element_blank())+
+      labs(fill="fjöldi karfa í hverju
+togi liggur á fjölda-bilinu:")+
+      xlab("bil")+
+      ylab("fjöldi toga á hverju bili")+
+      scale_x_discrete(breaks=25:1000)
+
+
+```
+
+*Á myndinni er greint hve mörg togin eru og hvernig karfi undir 30cm dreifist í vorleiðöngrum.  Þannig má t.d. sjá að á árinu 2021 voru ríflega 60 tog með 25-75 fiska. Yfir 18 tog voru með 75-125 fiska, 16 tog með 125-175 karfa o.s.frv. Alls fundust um 75 þúsund fiskar á þessu aldursbili og ættu því að geta gefið nokkuð góða vísbendingu um fjöldatölur á bilinu.  Vandamálið eins myndin hér að neðan sýnir er að mjög lítið er að finnast af karfa á bilinu 4-11cm, þ.e.a.s. fisk eins og mynd 23 sýnir.* 
+
+
+*Vissulega fannst meira af fiski á þessu lengdarbili í vorleiðangri 2021 en árin á undan en þegar skoðað er um hve fá tog er að ræða og hve fá togin hafa verið undanfarin ár verður að hafa talsverðar áhyggjur af nýliðun næstu ára.*
+
+
+\newpage
+
+## Fjölda toga með lítinn karfa (4-11cm) í vorleiðöngrum
+
+```{r, echo=FALSE, warning=FALSE, fig.cap="Þessi mynd sýnir fjölda toga í vorleiðöngrum þar sem fleiri en 25 fiskar á lengdarbilinu 4-11cm "}
+
+
+length_dist_SMB%>% 
+  filter(ar>=2018) %>%
+  filter(lengd<=11, lengd>4) %>% 
+  group_by(synis_id, ar=ar) %>% 
+  summarise(sum=sum(fjoldi, rm.na=TRUE))  %>% 
+  mutate(sum = as.integer(round(sum,digits=0))) %>% 
+
+  filter(sum>25) %>% 
+  ggplot(mapping=aes(x=cut_width(sum,50), fill=cut_width(sum,50)))+
+  geom_bar()+
+      facet_wrap(.~ar, ncol=2)+
+      theme(axis.ticks.x=element_blank(),
+                    axis.text.x = element_blank())+
+      labs(fill="fjöldi karfa í hverju
+togi liggur á bilinu:")+
+      xlab("bil")+
+      ylab("fjöldi toga á hverju bili")
+
+
+```
+
+*Myndin sýnir hversu fá tog eru með 4-11cm karfa í vorleiðöngrum. Leiðangurinn 2021 virðist þó hafa fundið meira en árin á undan. *
+
+*Myndin sýnir að það er í frekar fáum tilvikum (13-25 á ári) á árunum 2018-2021 sem fleiri en 100 fiskar veiddust í togum sem voru styttri en 30cm. Þessi tog eru nánast öll Norðvestanlands (lat>64,5, lon<-20). Á mynd 1 í tækniskýrslu um gullkarfa 2021 er stofninn á þessu aldurbili áætlaður við 25 milljónir og 95% öryggisbil lítið (innan við 5 milljónir).* 
+
+*Hvað sem aukningu ársins 2021 líður þá skortir verulega á gott seiðaár sem gæti verið grundvöllur nýliðunnar.*
+
+
+\newpage
+
+## Athugun á landfræðilegri dreifingu toga
+
+```{r,echo=FALSE, warning=FALSE,error=FALSE, include = FALSE}
+
+
+df20 <-
+  length_dist_SMB %>% 
+  filter(ar==2020) %>%
+  mutate(si=as.integer(stod_id)) %>% 
+  group_by(clo=cut_width(lat,0.2, boundary=63),cla=cut_width(lon,0.2, boundary = -27),si) %>%
+  summarise(n=n(),clo,cla) %>% 
+  group_by(cla,clo) %>% 
+  summarise()
+
+df19 <-
+  length_dist_SMB %>% 
+  filter(ar==2019) %>%
+  mutate(si=as.integer(stod_id)) %>% 
+  group_by(clo=cut_width(lat,0.2, boundary=63),cla=cut_width(lon,0.2, boundary = -27),si) %>% 
+  summarise(n=n(),clo,cla) %>% 
+  group_by(cla,clo) %>% 
+summarise()
+
+
+comparedf(df19,df20,c("clo","cla"))
+
+```
+
+
+```{r, echo=FALSE, warning=FALSE,error=FALSE,fig.cap="Myndin sýnir hnit stöðva í vorleiðöngrum 2020 og 2021. Myndin sýnir að sömu stöðvareru kannaðar ár eftir ár"}
+
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+#class(world)
+
+
+pipe_data<-
+  length_dist_SMB %>% 
+  filter(ar>=2020) %>% 
+  filter(lengd>0)
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = pipe_data, 
+               aes(x = lon, 
+                   y = lat,color=as.factor(ar)), 
+               size = 0.7, 
+              shape = 16)+
+    coord_sf(xlim = c(-28., -11), ylim = c(62., 68), expand = FALSE)+
+  labs(color ="ár")
+  
+#pipe_data %>% 
+  #filter(ar>=2020) %>% 
+  #filter(lengd>0) %>% 
+  #group_by(ar, stod_id) %>% 
+  #summarise() %>% 
+  #group_by(ar) %>%  
+  #summarise(n=n())
+
+```
+
+*Myndin sýnir þau tog sem fundu karfa á árunum 2020 og 2021. Á árinu 2020 voru samtals 568 tog og fannst karfi í 522. Á árinu 2021 voru 572 tog og fannst karfi í 509.*
+
+
+\newpage
+
+## Athugun á landfræðilegri dreifingu karfa sem eru styttri en 30cm í vorleiðangri
+```{r,echo=FALSE, warning=FALSE,fig.cap="Myndin sýnir hnit stöðva í vorleiðöngrum 2001, 2011 og 2021 þar sem fleiri en 100 fiskar undir 30cm fundust."}
+
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+#class(world)
+
+
+pipe_data<-
+  length_dist_SMB %>% 
+  filter(ar==2001| ar==2011| ar==2021) %>% 
+  filter(lengd<=30) %>% 
+  group_by(stod_id,lat,lon,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  filter(heildarfjoldi>100)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = pipe_data, 
+               aes(x =lon, 
+                   y = lat,
+                   color=as.factor(ar)), 
+               size = 1.2, 
+              shape = 16)+
+    coord_sf(xlim = c(-28., -11), ylim = c(62., 68), expand = FALSE)+
+    labs(color="ár", alpha=element_blank())
+  
+```
+
+
+*Myndin sýnir hversu útbreiðsla karfa undir 30cm hefur dregist saman frá aldamótum. Árið 2001 dreifðist hann töluvert út fyrir Norðvesturlandi, Norðurlandi og eilítið fyrir Norðausturlandi.  Tíu árum síðar er dreifingin norðlægari og nær ekki eins langt austur.  Í mælingunni í vorleiðangri 2021 mældist karfi í þessum aldurshópi einkum úti fyrir Norðvesturlandi.*
+
+
+\newpage
+
+## Athugun á landfræðilegri dreifingu karfa sem eru á lengdarbilinu 4-11cm í vorleiðangri
+```{r,echo=FALSE, warning=FALSE,fig.cap="Myndin sýnir hnit stöðva í vorleiðöngrum 2001 og 2021 þar sem fleiri en 50 fiskar á lengdarbilinu 4-11cm fundust."}
+
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+#class(world)
+
+
+pipe_data<-
+  length_dist_SMB %>% 
+  filter(ar==2001| ar==2011| ar==2021) %>% 
+  filter(lengd>4, lengd<=11) %>% 
+  group_by(stod_id,lat,lon,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  filter(heildarfjoldi>50)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = pipe_data, 
+               aes(x =lon, 
+                   y = lat,
+                   color=as.factor(ar)), 
+               size = 1.2, 
+              shape = 16)+
+    coord_sf(xlim = c(-28., -11), ylim = c(62., 68), expand = FALSE)+
+    labs(color="ár", alpha=element_blank())
+  
+```
+
+*Myndin sýnir hversu sjaldgæft það er að finna karfa sem er á lengdarbilinu 4-11cm, en á henni eru þau tog þar sem fleiri en 50 fiskar fundust.*
+
+
+
+
+\newpage
+
+## Kolmagorov-Smirnov próf á dreifingu eftir landshlutum fyrir karfa sem eru lengri en 33cm
+
+```{r, echo=FALSE, warning=FALSE,include=FALSE}
+
+valid_ar<-2021
+
+sv<-
+  length_dist_SMB %>% 
+  filter(lengd>33) %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat<64.5, lon< -20) 
+ 
+nv<-
+  length_dist_SMB %>% 
+  filter(lengd>33) %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat>64.5, lon< -20) 
+
+ sa<-
+  length_dist_SMB %>% 
+  filter(lengd>33) %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat<64.5, lon> -20)  
+  
+na<-
+  length_dist_SMB %>% 
+  filter(lengd>33) %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat>64.5, lon> -20)  
+
+
+
+```
+
+
+
+```{r k_s1,fig.cap="Kolmagorov - Smirnov próf milli dreifinga á Norðvestur- og Suðvesturlandi fyrir lengri karfa", error=FALSE,echo=FALSE, warning=FALSE }
+
+
+ks_nv<-
+  nv%>% 
+  group_by(lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  mutate(per = sum_fjoldi/sum(sum_fjoldi),fj=sum(sum_fjoldi)) %>% 
+  mutate(cum_per= cumsum(per)) 
+
+ks_sv<-
+  sv%>% 
+  group_by(lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  mutate(per = sum_fjoldi/sum(sum_fjoldi), fj=sum(sum_fjoldi)) %>% 
+  mutate(cum_per= cumsum(per)) 
+  
+
+
+ ks<- inner_join(ks_nv, ks_sv,by="lengd")
+
+ ks <- 
+   ks %>% 
+   mutate(d=abs(cum_per.x-cum_per.y)) 
+ 
+
+ ks %>% 
+   ggplot(aes(x=lengd) )+
+   geom_line(aes(y=cum_per.x, color="Norðvestur"))+
+   geom_line(aes(y=cum_per.y, color="Suðvestur"))+
+   ylab("cumulative distributions")
+ 
+ 
+ statistic=max(ks$d)
+ fjn <- max(ks_nv$fj)
+ fjm <- max(ks_sv$fj)
+ 
+format(fjm, digits=5)
+format(fjn, digits = 5)
+
+test=1.73*sqrt((fjn+fjm)/(fjn*fjm))
+
+
+
+format(statistic, digits = 2)
+format (test, digits=2)
+
+
+```
+
+*Myndin sýnir hversu ólík lengdardreifing er á Suðvestur- og Norðvesturlandi í vorleiðangri 2021 fyrir karfa sem eru lengri en 33cm. Marktækur munur er á þessari dreifingu skv. Kolmogorov Smirnov prófi. Þetta kemur ekki á óvart miðað við landfræðilega dreifingu á minni karfa sbr. myndina hér að framan.*
+
+\newpage
+## Kolmagorov-Smirnov próf á lengdardreifingum eftir landshlutum fyrir karfa sem eru lengri en 33cm
+
+```{r, echo=FALSE, warning=FALSE,include=FALSE}
+
+valid_ar<-2021
+
+sv<-
+  length_dist_SMB %>% 
+  filter(lengd>33) %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat<64.5, lon< -20) 
+ 
+nv<-
+  length_dist_SMB %>% 
+  filter(lengd>33) %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat>64.5, lon< -20) 
+
+ sa<-
+  length_dist_SMB %>% 
+  filter(lengd>33) %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat<64.5, lon> -20)  
+  
+na<-
+  length_dist_SMB %>% 
+  filter(lengd>33) %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat>64.5, lon> -20)  
+```
+
+
+
+
+
+```{r k_s2, fig.cap="Kolmagorov próf milli dreifinga á Norðvestur- og Norðausturlandi fyrir lengri karfa", error=FALSE,echo=FALSE, warning=FALSE }
+
+
+ks_nv<-
+  nv%>% 
+  group_by(lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  mutate(per = sum_fjoldi/sum(sum_fjoldi),fj=sum(sum_fjoldi)) %>% 
+  mutate(cum_per= cumsum(per)) 
+
+ks_na<-
+  na%>% 
+  group_by(lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  mutate(per = sum_fjoldi/sum(sum_fjoldi), fj=sum(sum_fjoldi)) %>% 
+  mutate(cum_per= cumsum(per)) 
+  
+
+
+ ks<- inner_join(ks_nv, ks_na,by="lengd")
+
+ ks <- 
+   ks %>% 
+   mutate(d=abs(cum_per.x-cum_per.y)) 
+ 
+
+ ks %>% 
+   ggplot(aes(x=lengd) )+
+   geom_line(aes(y=cum_per.x, color="Norðvestur"))+
+   geom_line(aes(y=cum_per.y, color="Norðaustur"))+
+   ylab("cumulative distributions")
+ 
+ 
+ 
+ statistic=max(ks$d)
+ fjn <- max(ks_nv$fj)
+ fjm <- max(ks_na$fj)
+ 
+format(fjm, digits=5)
+format(fjn, digits = 5)
+
+test=1.73*sqrt((fjn+fjm)/(fjn*fjm))
+
+
+format(statistic, digits = 2)
+format (test, digits=2)
+
+
+```
+
+
+*Myndin sýnir líkt og fyrri mynd hversu ólík lengdardreifing er úti fyrir Norðvesturlandi og Norðausturlandi vorleiðangri 2021 fyrir karfa sem eru lengri en 33cm. Marktækur munur á þessum dreifingum skv. Kolmogorov Smirnov prófi.Atghygli er vakin á því að frekar fáir karfast finnast úti fyrir Norðausturlandi.*
+
+
+
+\newpage
+
+## Áhrif hitastigs
+
+
+```{r, echo=FALSE, error=FALSE, warning=FALSE,fig.cap="Meðalbotnhitastig í vorleiðangri" }
+
+
+length_dist_SMB %>% 
+  filter(ar>=2000) %>% 
+  group_by(ar) %>% 
+  summarise(medal=mean(bottom_temp, na.rm=TRUE) ) %>% 
+  ggplot((aes(x=ar,y=medal)))+
+  geom_point()+
+  geom_smooth(level=0.95)+
+  ylab("meðalhitastig")+
+  xlab("ár")
+
+```
+
+*Hitastig í haustleiðöngrum hefur hækkað um eina gráðu frá árinu 2000, úr 3,5 gráðum í 4,5 gráður.*
+
+\newpage
+
+
+
+
+```{r, botnhiti_haust_styttri, warning=FALSE,error=FALSE, echo=FALSE,fig.cap="Dreifing botnhitastigs í haustleiðöngrum hjá fiskum sem eru undir 30cm"}
+length_dist_SMH %>% 
+  filter(ar==2000|ar== 2010 |ar==2020) %>% 
+  filter(lengd<30) %>% 
+  group_by(stod_id, bottom_temp,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  ggplot(aes(x=bottom_temp,weight=heildarfjoldi,color=as.factor(ar)))+
+  geom_freqpoly(binwidth=1)+
+  xlab("hitastig við botn") +
+  ylab("fjöldi")+
+  labs(color="ár")
+  
+
+```
+
+*Myndin sýnir að styttri karfinn á árunum 2000 og 2010 fannst við töluvert lægra hitastig en á árinu 2020. Einnig má sjá að miklu meira var af styttri fiski á þeim tíma. Því er frekar lítið unnt að segja um árið 2020.*
+
+\newpage
+
+
+```{r, fig.cap="Meðalbotnhitastig í haustleiðangri", echo=FALSE, error=FALSE, warning=FALSE}
+
+
+length_dist_SMH %>% 
+  filter(ar>=2000) %>% 
+  group_by(ar) %>% 
+  summarise(medal=mean(bottom_temp, na.rm=TRUE) ) %>% 
+  ggplot((aes(x=ar,y=medal)))+
+  geom_point()+
+  geom_smooth(level=0.95)+
+  ylab("meðalhitastig")+
+  xlab("ár")+
+  scale_y_continuous(breaks=pretty_breaks())
+
+```
+
+*Myndin sýnir að meðalhitastig sem karfi hefur verið veiddur við í haustleiðöngrum hefur lítið breyst.*
+
+\newpage
+
+```{r, botnhiti_haust, warning=FALSE,error=FALSE, echo=FALSE, fig.cap="Dreifing botnhitastigs í hausleiðöngrum undanfarinna ára"}
+length_dist_SMH %>% 
+  filter(ar>=2015) %>% 
+  group_by(stod_id, bottom_temp,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  ggplot(aes(x=bottom_temp,weight=heildarfjoldi,color=as.factor(ar)))+
+  geom_freqpoly(binwidth=0.25)+
+  labs(color="ár")+
+  ylab("fjöldi")+
+  xlab("botnhitastig")
+
+```
+
+*Myndin sýnir dreifingu botnhitastigs þegar tog hefst og hefur hún verið svipuð í haustleiðöngrum frá 2015. Skoðun leiddi í ljós að dreifingin hefur verið mjög svipuð frá 2000. Botnhiti þar sem fiskur fæst er oftast meiri en 6 gráður.*
+
+\newpage
+
+```{r, botnhiti_vor, warning=FALSE,error=FALSE, echo=FALSE, fig.cap="Dreifing botnhitastigs í vorleiðöngrum undanfarinna ára"}
+length_dist_SMB %>% 
+  filter(ar>=2017) %>% 
+  group_by(stod_id, bottom_temp,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  ggplot(aes(x=bottom_temp,weight=heildarfjoldi,color=as.factor(ar)))+
+  geom_freqpoly(binwidth=.25)+
+  xlab("hitastig við botn") +
+  ylab("fjöldi")+
+  labs(color="ár")
+
+```
+
+*Nokkuð jöfn dreifing á fiski virðist vera á hitabilinu 5-6.5 gráður í vorleiðöngrum.*
+
+\newpage
+
+```{r, botnhiti_haust_staerri, warning=FALSE,error=FALSE, echo=FALSE,fig.cap="Dreifing botnhitastigs í haustleiðöngrum undanfarinna ára fyrir fisk sem er lengri en 33cm"}
+length_dist_SMH %>% 
+  filter(ar>=2017) %>% 
+  filter(lengd>=33) %>% 
+  group_by(stod_id, bottom_temp,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  ggplot(aes(x=bottom_temp, weight=heildarfjoldi,color=as.factor(ar)))+
+  geom_freqpoly(aes(binwidth=0.25)) +
+  xlab("hitastig við botn") +
+  ylab("fjöldi")+
+  labs(color="ár")
+```
+
+*Stærri karfinn virðist velja hlýrri sjó eins og þessi mynd fyrir fisk stærri en 19cm sýnir.*  
+
+
+\newpage
+
+
+```{r, botnhiti_haust_minni, warning=FALSE,error=FALSE, echo=FALSE,fig.cap="Dreifing botnhitastigs í vorleiðöngrum undanfarinna ára fyrir fisk styttri en 19cm"}
+length_dist_SMH %>% 
+  filter(ar>=2017) %>% 
+  filter(lengd<=19) %>% 
+  group_by(stod_id, bottom_temp,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  ggplot(aes(x=bottom_temp, weight=heildarfjoldi,color=as.factor(ar)))+
+  geom_freqpoly(binwidth=0.25)+
+  xlab("hitastig við botn") +
+  ylab("fjöldi")+
+  labs(color="ár")
+
+  
+
+```
+
+*Minni karfinn virðist forðast samneyti við stærri karfann eins og þessi mynd fyrir karfa undir 19cm sýnir.  Rétt er að árétta að um miklu færri stutta karfa er að ræða en lengri.*
+*Áhugavert væri að kanna hvort fleiri styttri fiskar myndu finnast ef hitaskilum væri fylgt.*
+
+
+\newpage
+
+```{r, botnhiti_haust_minni2, warning=FALSE,error=FALSE, echo=FALSE,fig.cap="Dreifing botnhitastigs í vorleiðöngrum undanfarinna ára fyrir fisk á lengdarbilinu 4-11cm"}
+length_dist_SMH %>% 
+  filter(ar>2017) %>% 
+  filter(lengd<=11, lengd>=4) %>% 
+  group_by(stod_id, bottom_temp,ar,fjoldi) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  ggplot(aes(x=bottom_temp,weight=heildarfjoldi, color=as.factor(ar)))+
+  geom_freqpoly(binwidth=1)+
+  xlab("hitastig við botn") +
+  ylab("fjöldi")+
+  labs(color="ár")
+
+  
+
+```
+
+*Eins og sjá má eru svo fáir fiskar á þessu stærðarbili í haustleiðöngrum að illmögulegt er að draga nokkrar ályktanir um hvernig þeir dreifast. Mest fannst af þessari stærð í leiðangrinum 2020, en þó svo lítið að litlu máli skiptir.*
+
+
+
+
+
+
+\newpage
+
+## Dægursveiflan
+
+
+```{r,error=FALSE, echo=FALSE, warning=FALSE, fig.cap="Myndin sýnir dreifingu toga á milli klukkustunda dagsins fyrir árið 2020.  Dreifing er svipuð fyrir öll ár"}
+
+length_dist_SMB %>% 
+  filter(ar>=2020) %>% 
+  group_by(stod_id,hour,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  filter(heildarfjoldi>0) %>% 
+  mutate(stund=hour(hour)) %>% 
+  ggplot(aes(x=stund))+
+  geom_bar( fill="steelblue")+
+  ylab("fjöldi toga")+
+  xlab("stund sólarhringsins")
+
+
+
+```
+
+*Togin dreifast jafnt yfir sólarhringinn eins og þessi mynd fyrir vorleiðangurinn 2020 sýnir. Sams konar mynstur er fyrir haustleiðangra og vorleiðangra öll árin, enda togað allan sólarhringinn í leiðöngrum við Ísland.*
+
+
+\newpage
+
+## Dægursveifla fyrir fisk lengri en 19cm frá 2015 að telja
+
+
+```{r,error=FALSE, echo=FALSE, warning=FALSE, fig.cap="Dægursveifla fyrir karfa lengri en 19cm frá 2015 að telja"}
+
+length_dist_SMB %>% 
+  filter(ar>=2016) %>% 
+  filter(lengd>=19) %>% 
+  group_by(stod_id,hour,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  filter(heildarfjoldi>0) %>% 
+  mutate(stund=hour(hour)) %>% 
+  ggplot(aes(x=stund, y=heildarfjoldi))+
+  geom_col( fill="steelblue")+
+  xlab("stund sólarhringsins")
+
+
+```
+
+*Karfi lengri en 19cm veiðist aðallega frá kl. 7 á morgnana og til kl 19 á kvöldin. Ljóst er af myndinni að dægursveiflan er á bilinu 3-4x.*
+
+*Dægursveiflan í þessum lengdarflokki virðist talsvert meiri en fram hefur komið.*
+
+
+
+\newpage
+## Dægursveiflan
+
+
+```{r,error=FALSE, echo=FALSE, warning=FALSE, fig.cap="Dægursveifla fyrir karfa styttri en 19cm frá 2008 til 2011 að telja"}
+
+length_dist_SMB %>% 
+  filter(ar<=2021,ar>=2018) %>% 
+  filter(lengd<=19) %>% 
+  group_by(stod_id,hour,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  filter(heildarfjoldi>0) %>% 
+  mutate(stund=hour(hour)) %>% 
+  ggplot(aes(x=stund, y=heildarfjoldi))+
+  geom_col( fill="steelblue")+
+  xlab("stund sólarhringsins")
+
+```
+
+*Karfi styttri en 19cm veiðist einkum frá kl. 19 á kvöldin og til kl. 10 að morgni. Dægursveifla ræðst að miklu leyti af stærð karfa. Rétt er að vekja athygli á því að fjöldi karfa undir 19cm er lágur samaborið við karfa stærri en 19cm. *
+
+*Fram kemur í ICES NWWG 2021, bls. 371  að síðan 2003 hafi megnið af lífmassanum fundist í 5-10 togum norðvestur af Íslandi.*
+
+
+*Ein leið til þess finna fleiri styttri karfa væri að toga á þeim stöðum þar sem líklegast er að þeir finnist  eftir kl. 8 á kvöldin og fyrir kl. 8 á morgnana. Myndin sýnir að  dægursveiflan er > 4x hjá styttri karfa.  Með því að toga á nóttunni mætti hugsanlega fjölga togum með styttri fiski töluvert. *
+
+*Dægursveiflan virðist töluvert meiri í þessum tölum, en vanalega er talað um 1,6x-2x sem háð er lengd (sjá t.d. Figure B.3.7 í Stock annex). Stuðlarnir á þessari mynd voru reiknaðir eftir tölum úr vorleiðangri 1985 - 2011, en virðast hafa tekið talsverðum breytingum.* 
+
+*Einnig væri fróðlegt að toga á sömu stöðum að deginum til til þess að fá betri sýni hjá stærri fiskunum auk samanburðar. Jafnframt mætti fá mun fleiri mælingar hjá flotanum eins og rætt hefur verið um hér að framan til að skilja lengdarsamsetningu stærri karfanna betur, sem gæti hjálpað samleitni Gadget.*
+
+*Eins og greinir hér að framan er einnig áhugavert að fylgja hitaskilum innan viðkomandi reits sem kostur er en slíkt virðist auka líkindi þess að styttri fiskur finnist.*
+
+*Með betri upplýsingum um styrk yngri árganga auk betri upplýsinga um aðra árganga (m.a. frá flotanum) er líklegt að Gadget sýni meiri samleitni og að ráðgjöf verði markvissari.*
+
+
+\newpage
+
+
+## Veiði og skip úti fyrir Norðvesturlandi 
+
+
+
+```{r, echo=FALSE, fig.cap="Skip og veiðar úti fyrir Norðvesturlandi í vorleiðangri 2021"}
+
+
+artal<- 2021
+leidangur = length_dist_SMB
+
+
+
+
+pipe_data<-
+ leidangur %>% 
+  filter(ar==artal) %>% 
+  group_by(stod_id,lat,lon,ar, vessel_id) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  filter(heildarfjoldi>0)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = pipe_data, 
+               aes(x =lon, 
+                   y = lat,
+                   color=as.factor(vessel_id)), 
+               size = 1.2, 
+              shape = 16)+
+    coord_sf(xlim = c(-28., -11), ylim = c(62., 68), expand = FALSE)+
+    labs(color="skip", alpha=element_blank())
+
+
+kable(leidangur %>% 
+  filter(ar==artal) %>% 
+  group_by(vessel_id) %>%
+  summarise(sum=sum(fjoldi)),
+  caption = 'Skip og fjöldi karfa í vorleiðangri 2021') %>% 
+  kable_styling(latex_options = "hold_position")
+
+```
+
+
+
+
+\newpage
+## Skipting veiða út fyrir Norðvestur- og Suðvesturlandi eftir lengdum
+
+
+```{r, echo=FALSE}
+
+valid_ar<-2016
+
+
+nv<-
+  length_dist_SMB %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat>64.5, lon< -20) 
+artal<-2016
+
+kable(nv %>% 
+  filter(ar>=valid_ar) %>% 
+  mutate (staerdarflokkar=cut(lengd,c(0,11,14,19,30,33,40,Inf))) %>% 
+  group_by(ar,staerdarflokkar) %>%  
+  summarise(sum=round(sum(fjoldi))) %>% 
+  pivot_wider(names_from = staerdarflokkar, values_from=sum),
+  caption='Afli vorleiðangra úti fyrir Norðvesturlandi eftir lengd')%>% 
+  kable_styling(latex_options="HOLD_position")
+
+
+
+```
+
+
+
+
+```{r, warnings=FALSE, echo=FALSE}
+
+valid_ar<-2016
+
+
+nv<-
+  length_dist_SMB %>% 
+  filter(ar>=valid_ar) %>% 
+  filter(lat<=64.5, lon< -20) 
+artal<-2016
+
+kable(nv %>% 
+  filter(ar>=valid_ar) %>% 
+  mutate (staerdarflokkar=cut(lengd,c(0,11,14,19,30,33,40,Inf))) %>% 
+  group_by(ar,staerdarflokkar) %>%  
+  summarise(sum=round(sum(fjoldi))) %>% 
+  pivot_wider(names_from = staerdarflokkar, values_from=sum),
+  caption='Afli vorleiðangra úti fyrir Suðvesturlandi eftir lengd')%>% 
+  kable_styling(latex_options="HOLD_position")
+
+
+
+```
+
+*Í báðum þessum töflum vekur athygli hve lík niðurstaða leiðangra hefur verið frá 2016. Þrátt fyrir þetta er greinilegt af myndum XXX að lengdardreifingin hliðrast mjög skipulega eftir árum.*
+
+\clearpage
+
+## Fjöldi toga í reitum
+
+```{r, tog_i_reitum, echo=FALSE}
+
+
+my_kable(length_dist_SMH %>% 
+  filter(ar>=2015) %>% 
+  mutate(reitir = substring(station, 1,3)) %>% 
+  group_by(reitir,ar, station) %>% 
+  summarise(nn=n()) %>% 
+  group_by(reitir,ar) %>% 
+  summarise(fjoldi=n()) %>% 
+  arrange(ar) %>% 
+  pivot_wider(names_from = ar,values_from=fjoldi),
+  caption='Fjöldi toga í hverjum reit vorleiðöngrum (einungis fyrstu 10 raðir sýndar)') %>% 
+  kable_styling(font_size = 8) %>% 
+  kable_styling(latex_options="HOLD_position")
+
+
+
+
+my_kable(length_dist_SMB %>% 
+  filter(ar>=2015) %>% 
+  mutate(reitir = substring(station, 1,3)) %>% 
+  group_by(reitir,ar, station) %>% 
+  summarise(nn=n()) %>% 
+  group_by(reitir,ar) %>% 
+  summarise(fjoldi=n()) %>% 
+  arrange(ar) %>% 
+  pivot_wider(names_from = ar,values_from=fjoldi),
+  caption='Fjöldi toga í hverjum reit haustleiðöngrum (einungis fyrstu 10 raðir sýndar)') %>% 
+  kable_styling(font_size = 8)%>% 
+  kable_styling(latex_options="HOLD_position")
+  
+  
+```
+
+*Mjög litlar breytingar hafa verið á fjölda toga í hverjum reit frá 2016 að telja hvort sem um vor- eða haustleiðangra er að ræða.*
+
+
+
+
+\clearpage
+# Grálúða
+
+## Fjöldi grálúðu í leiðöngrum undanfarin ár
+
+
+```{r ,fjoldi_haust_GL,echo=FALSE, warning=FALSE,error=FALSE,fig.cap="Mynd sem sýnir uppreiknaðan fjölda fisks sem talinn er eða mældur í haustleiðangri frá 2000 að telja", warning=FALSE}
+ghalibut_length_dist_SMH%>% 
+  filter(ar>=2000) %>% 
+  mutate(reported=taldir+maeldir) %>% 
+  group_by(ar,stod_id,reported) %>% 
+  summarise() %>% 
+  group_by(ar) %>% 
+  summarise(sum=sum(reported, na.rm=TRUE) ) %>% 
+  ggplot(mapping=aes(x=ar, y=sum))+
+  geom_point()+
+  geom_smooth(level=0.8)+
+  ylab("fjöldi fiska")+
+  xlab("ár")
+
+```
+
+
+*Í haustleiðangri veiðast u.þ.b. 3.000 grálúður og í vorleiðangri um 1.000. Minna hefur veiðst í leiðöngrum undanfarinna ára. Í haustleiðangri 2020 veiddust 2322 og í vorleiðangri 2021 veiddust 458.*
+
+
+
+\newpage
+## Fjöldi grálúðu í leiðöngrum undanfarin ár
+
+
+```{r ,fjoldi_floti_GL,echo=FALSE, warning=FALSE,error=FALSE,fig.cap="Mynd sem sýnir uppreiknaðan fjölda fisks sem talinn er eða mældur hjá flotanum frá 2000 að telja", warning=FALSE}
+ghalibut_length_dist_commercial%>% 
+  filter(ar>=2000) %>% 
+  mutate(reported=taldir+maeldir) %>% 
+  group_by(ar,stod_id,reported) %>%  
+  summarise() %>% 
+  group_by(ar) %>% 
+  summarise(sum=sum(reported, na.rm=TRUE) ) %>% 
+  ggplot(mapping=aes(x=ar, y=sum))+
+  geom_point()+
+  geom_smooth(level=0.95)+
+  ylab("fjöldi fiska")+
+  xlab("ár")
+
+```
+
+*Sýni frá flotanum eru u.þ.b. 12.000 á ári. Á síðasta ári voru tekin tæplega 10.000  sýni sem er í samræmi við sýnatöku árin á undan. Í tækniskýrslu um grálúðu 2021 er talað um að færri sýna hafi verið aflað frá flotanum vegna Covid líkt og í tilviki karfa.*
+
+
+
+\newpage
+
+## Lengdardreifing, haustleiðangur
+
+```{r, fig.cap="Lengdardreifing í haustleiðöngrum", echo=FALSE, warning=FALSE, error=FALSE}
+ghalibut_length_dist_SMH %>% 
+  filter(ar>=2016) %>% 
+  #filter(lengd<=54, lengd>19) %>% 
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=vegid, group=ar, fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity", scale=1, rel_min_height=0.01)+
+  labs(fill="Fjöldi grálúða í 
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(0,100)
+```
+
+*Ósamræmis gætir milli mælinga haustleiðangra áranna 2016 og 2017 annars vegar og 2019 og 2020 hinsvegar þar sem lengri fiskum virðist fjölga í tilteknum árgöngum þrátt fyrir veiðar. Ekki er ósennilegt að þetta sé vegna þess hve sýnin eru lítil.*
+
+\newpage
+
+## Lengdardreifing, vorleiðangur
+
+
+```{r, fig.cap="Lengdardreifing í vorleiðöngrum", echo=FALSE, warning=FALSE, error=FALSE}
+ghalibut_length_dist_SMB %>% 
+  filter(ar>=2016) %>%
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=vegid, group=ar, fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity", scale=1, rel_min_height=0.01)+
+  labs(fill="Fjöldi grálúða í 
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(0,100)
+```
+
+*Enn meira ósamræmis virðist gæta í mælingum vorleiðangra áranna 2016 til 2021, sbr. áður um haustleiðangra. Enn færri sýni eru tekin í vorleiðöngrum en haustleiðöngrum og kemur þetta ósamræmi því lítið á óvart.*
+
+
+\newpage
+
+## Lengdardreifing, flotinn
+
+
+```{r, fig.cap="Lengdardreifing flotans", echo=FALSE, warning=FALSE, error=FALSE}
+ghalibut_length_dist_commercial %>% 
+  filter(ar>=2016) %>% 
+  #filter(lengd<=54, lengd>19) %>% 
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=vegid, group=ar, fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity", scale=1, rel_min_height=0.01)+
+  labs(fill="Fjöldi grálúða í 
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(0,100)
+```
+
+*Mun betra samræmi er í sýnatöku flotans en í vor- og haustleiðöngrum. Þrátt fyrir þetta eru sýnin litil og mætti stækka þau verulega.*
+
+
+*Með því að nýta gögn frá flotanum betur mætti hugsanlega setja niðurstöður mælinga inn í öflugra líkan eins og Gadget og kortleggja stofninn mun betur en nú er gert.*
+
+\newpage
+
+## Dreifing grálúðu umhverfis Ísland
+
+
+
+```{r, fig.cap="Dreifing grálúðu umhverfis landið árin 2010, 2020 og 2021 í haustleiðöngrum þar sem fleiri en 25 grálúður veiðast", echo=FALSE, warning=FALSE, error=FALSE}
+
+pipe_data<-
+  ghalibut_length_dist_SMH %>% 
+  filter(ar==2010| ar>=2020) %>% 
+  group_by(stod_id,lat,lon,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  filter(heildarfjoldi>25)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = pipe_data, 
+               aes(x =lon, 
+                   y = lat,
+                   color=as.factor(ar)), 
+               size = 1.2, 
+              shape = 16)+
+    coord_sf(xlim = c(-28., -11), ylim = c(62., 68), expand = FALSE)+
+    labs(color="ár", alpha=element_blank())
+```
+
+*Á myndinni eru þau tog í haustleiðöngrum þar sem fleiri fiskar en 25 eru í togi. Myndin sýnir að dreifing sýnanna í haustleiðöngrum 2010 og 2020 er svipuð.* 
+
+
+
+\newpage
+
+## Dreifing grálúðu hjá flotanum
+
+
+
+```{r, fig.cap="Dreifing grálúðu umhverfis landið árin 2000, 2010 og 2021 þar sem fleiri en 50 veiðast í togi", echo=FALSE, warning=FALSE, error=FALSE}
+
+pipe_data<-
+  ghalibut_length_dist_commercial %>% 
+  filter(ar==2010| ar>=2020) %>% 
+  group_by(stod_id,lat,lon,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  filter(heildarfjoldi>20)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = pipe_data, 
+               aes(x =lon, 
+                   y = lat,
+                   color=as.factor(ar)), 
+               size = 1.2, 
+              shape = 16)+
+    coord_sf(xlim = c(-28., -11), ylim = c(62., 68), expand = FALSE)+
+    labs(color="ár", alpha=element_blank())
+```
+
+
+*Á myndinni má sjá tog flotans. Eins og myndin sýnir er flotinn að finna grálúðu á öðrum stöðum en leiðangrarnir.*
+
+*Grálúða virðist ekki vera á togslóðum leiðangranna.*
+
+\newpage
+
+
+## Hitastig þar sem grálúða veiðist
+
+```{r, botnhiti_vor_gl, warning=FALSE,error=FALSE, echo=FALSE,fig.cap="Dreifing botnhitastigs í vorleiðöngrum undanfarin ára"}
+ghalibut_length_dist_SMB%>% 
+  filter(ar>=2016) %>% 
+  #filter(lengd>=33) %>% 
+  group_by(stod_id, bottom_temp,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  ggplot(aes(x=bottom_temp, weight=heildarfjoldi,color=as.factor(ar)))+
+  geom_freqpoly(aes(binwidth=0.25)) +
+  xlab("hitastig við botn") +
+  ylab("fjöldi")+
+  labs(color="ár")
+```
+
+*Grálúða í vorleiðöngrum fæst við hitastig sem er í kringum núll gráður.*
+
+\newpage
+
+```{r, botnhiti_haust_gl, warning=FALSE,error=FALSE, echo=FALSE,fig.cap="Dreifing botnhitastigs þar sem grálúða fannst í haustleiðöngrum undanfarin ára"}
+ghalibut_length_dist_SMH%>% 
+  filter(ar>=2016) %>% 
+  #filter(lengd>=33) %>% 
+  group_by(stod_id, bottom_temp,ar) %>% 
+  summarise(heildarfjoldi=sum(fjoldi)) %>% 
+  ggplot(aes(x=bottom_temp, weight=heildarfjoldi,color=as.factor(ar)))+
+  geom_freqpoly() +
+  xlab("hitastig við botn") +
+  ylab("fjöldi")+
+  labs(color="ár")
+```
+
+*Grálúða veiðist í haustleiðöngrum einkum við um núll gráður. *
+
+
+\newpage
+
+
+## Meðalhitastig í grálúðutogum
+
+
+```{r,medalhiti_gl1, echo=FALSE,error=FALSE, warning=FALSE,fig.cap="Meðalbotnhitastig í vorleiðangri"}
+
+ghalibut_length_dist_SMB %>% 
+  filter(ar>=2000) %>% 
+  group_by(ar) %>% 
+  summarise(medal=mean(bottom_temp, na.rm=TRUE) ) %>% 
+  ggplot((aes(x=ar,y=medal)))+
+  geom_point()+
+  geom_smooth(level=0.95)+
+  ylab("meðalhitastig")+
+  xlab("ár")
+
+
+```
+
+
+*Meðalhitastig í togum með grálúðu í vorleiðöngrum hefur hækkað úr 2,5 gráðum árið 2010 í tæplega 3,3 gráður á árinu 2021.*
+*Hugsanlega gæti verið betra að toga nær hitaskilum til að finna meira af grálúðu.*
+
+
+\newpage
+
+
+```{r, medalhiti_gl2,fig.cap="Meðalbotnhitastig í hausteiðangri", echo=FALSE, error=FALSE, warning=FALSE}
+
+
+ghalibut_length_dist_SMH %>% 
+  filter(ar>=2000) %>% 
+  group_by(ar) %>% 
+  summarise(medal=mean(bottom_temp, na.rm=TRUE) ) %>% 
+  ggplot((aes(x=ar,y=medal)))+
+  geom_point()+
+  geom_smooth(level=0.95)+
+  ylab("meðalhitastig")+
+  xlab("ár")
+
+```
+
+*Meðalhitastig í haustleiðangri hefur hækkað úr 1,3 gráðum árið 2010 í 1,8 gráður árið 2020. Myndir 33 og 34 eru spegilmyndir mynda 40 og 41. Áhugavert er að skoða betur tengsl botnhitastigs og magns sem veiðist.*
+
+
+
+
+\newpage 
+
+# Heimildaskrá
+
+**Gögn frá Hafrannsóknarstofnun (fyrir karfa og grálúðu)**
+
+1. age_length_keys.csv
+1.   length_dist_SMB.csv
+1.   length_dist_SMH.csv
+1.   length_dist_commercial.csv
+1.   ghalibut_length_dist_SMB.csv
+1.   ghalibut_length_dist_SMH.csv
+1.   ghalibut_length_dist_commercial.csv
+
+
+**Tækniskýrsla Hafrannsóknarstofnunar um gullkarfa 2021**, https://www.hafogvatn.is/is/veidiradgjof 
+
+**Tækniskýrsla Hafrannsóknarstofnunar um grálúða 2021**, https://www.hafogvatn.is/is/veidiradgjof 
+
+**A manual for the Icelandic groundfish survey in spring 2020**,
+https://www.hafogvatn.is/is/midlun/utgafa/haf-og-vatnarannsoknir/a-manual-for-the-icelandic-groundfish-survey-in-spring-2020-hv-2020-08
+
+
+**Stofnmæling botnfiska á Íslandsmiðum 2021 - framkvæmd og helstu niðurstöður / Icelandic groundfish survey 2021 – implementation and main results**,
+https://www.hafogvatn.is/is/midlun/utgafa/haf-og-vatnarannsoknir/stofnmaeling-botnfiska-a-islandsmidum-2021-framkvaemd-og-helstu-nidurstodur-icelandic-groundfish-survey-2021-implementation-and-main-results-hv-2021-24
+
+**ICES NWWG REPORT 2021: **
+18 Redfish in Subareas 5, 6, 12 and 14
+19 Golden redfish (Sebastes norvegicus) in Subareas 5, 6 and 14,
+https://www.ices.dk/sites/pub/Publication%20Reports/Expert%20Group%20Report/Fisheries%20Resources%20Steering%20Group/2021/NWWG/01%20NWWG%20Report%202021.pdf
+
+
+**Stock Annex: Golden redfish (Sebastes norvegicus) in subareas 5, 6,12, and 14 (Iceland and Faroes grounds, West Scotland, Nort of Azores, Es of Greenland), last updated April 2019** ,
+http://prep.ices.dk/sites/pub/Publication%20Reports/Stock%20Annexes/2019/reg.27.561214_SA.pdf
+
+**Stock Annex: Greenland halibut (Reinhardtius hippoglossoides) in subareas 5, 6, 12, and 14 (Iceland and Faroes grounds, West of Scotland, North of Azores, East of Greenland)**,https://www.ices.dk/sites/pub/Publication%20Reports/Stock%20Annexes/2015/ghl-grn_SA.pdf 
+
+
+**Assessment of golden redfish(Sebastes marinus L) in Icelandic waters**,
+https://www.researchgate.net/publication/288810453_Assessment_of_golden_redfish_Sebastes_marinus_L_in_Icelandic_waters
+
+
+**Athugasemdir Hafrannsóknastofnunar um skýrsluna: „Um mat á stofnstærð karfa og grálúðu“**
+
+
+
+\newpage
+
+\newpage
+
+### Ýmis talnagögn sem tekin voru saman en eru ekki hluti af skýrslu
+
+## Athugun á lengdardreifingu eftir dýpi 
+
+```{r, echo=FALSE,warning=FALSE, error=FALSE, fig.cap="Þessi mynd sýnir tengsl dýptar og meðalstærðar karfa í haustleiðöngrum.  Bláa línan er dregin í 40cm og er ekki meðallína"}
+
+length_dist_SMH %>% 
+  filter(ar>=2019) %>% 
+  
+  dplyr::select(synis_id, lengd,fjoldi, bottom_depth,ar) %>% 
+  group_by(synis_id,ar, lengd) %>% 
+  summarise(mu=sum(lengd*fjoldi, na.rm =TRUE)/sum(fjoldi,na.rm=TRUE), bottom_depth) %>% 
+  group_by(cut_w=cut_width(bottom_depth,50),ar) %>% 
+  summarise(mu2=mean(mu,na.rm=TRUE)) %>% 
+  ggplot(mapping=aes(x=cut_w,y=mu2, fill=cut_w)) + 
+           geom_col()+
+            geom_hline(yintercept = 36.5, color="blue")+
+            ylab("meðallengd")+
+            xlab("dýpi")+
+   facet_wrap(.~ar, ncol=1)+
+              theme(axis.ticks.x=element_blank(),
+                    axis.text.x = element_blank())+
+                    labs(fill="dýptarbil í metrum")
+
+  
+
+
+```
+
+
+
+
+*Á myndinni má sjá að í haustleiðöngrum er munur á meðalstærð karfa eftir dýpi og að lengri karfar virðast vera á meira dýpi. Athygli vekur hve ólíkar niðurstöður eru á árunum 2019 og 2020.  Niðurstöður eru mjög svipaðar við 575m dýpi, en ólíkar á bilinu 575-875m.*
+
+*Áhugavert verður að bera þetta saman við haustleiðangur ársins 2021.*
+
+\newpage
+
+```{r, echo=FALSE,warning=FALSE, fig.cap="Þessi mynd sýnir tengsl dýptar og meðalstærðar karfa í haustleiðöngrum.  Bláa línan er dregin í 40cm og er ekki meðallína"}
+
+length_dist_SMB %>% 
+  filter(ar>=2020) %>% 
+  dplyr::select(synis_id, lengd,fjoldi, bottom_depth,ar) %>% 
+  group_by(synis_id,ar) %>% 
+  summarise(mu=sum(lengd*fjoldi, na.rm=TRUE)/sum(fjoldi, na.rm=TRUE), bottom_depth) %>% 
+  group_by(cut_w=cut_width(bottom_depth,50),ar) %>% 
+  summarise(mu2=mean(mu, na.rm=TRUE)) %>% 
+  ggplot(mapping=aes(x=cut_w,y=mu2, fill=cut_w)) + 
+           geom_col()+
+            geom_hline(yintercept = 36.5, color="blue")+
+            ylab("meðallengd")+
+            xlab("dýpi")+
+   facet_wrap(.~ar, ncol=1)+
+              theme(axis.ticks.x=element_blank(),
+                    axis.text.x = element_blank())+
+                    labs(fill="dýptarbil í metrum")
+  
+
+
+```
+
+*Niðurstöður vorleiðangra 2020 og 2021 hvað meðallengd og dýpt varðar eru svipaðar.*
+
+
+*Ekki er unnt að færa inn sams konar mynd fyrir flotann þar sem gögn um dýpt liggja ekki fyrir. Auðvelt ætti að vera að safna þessum upplýsingum þar sem þær liggja fyrir um borð. Flotinn ætti jafnframt að safna umhverfisbreytum svo sem hitastigi, vindhraða og þess háttar.*
+
+
+
+
+\newpage
+
+
+```{r, echo=FALSE, warning=FALSE, fig.cap="Þessi mynd sýnir tengslin á milli vindhraða og fjölda grálúða sem voru veiddar í haustleiðöngrum frá 2016 að telja "}
+
+
+ghalibut_length_dist_SMH%>% 
+  filter(ar>=2016) %>%
+  group_by(wind_speed, ar) %>% 
+  summarise(sum=sum(fjoldi)) %>% 
+  ggplot( aes(wind_speed, sum)) +
+  geom_point(aes(color = ar)) +
+  geom_smooth(se = FALSE) +
+  ylab("fjöldi lúða")+
+  ylim(0,350)
+
+```
+
+
+
+
+
+
+\newpage
+
+### Meðallengd aldurshópa
+
+```{r tables, echo=FALSE, warning=FALSE, error=FALSE}
+kable(age_length_keys %>% 
+  filter(lengd<=33) %>% 
+  filter(ar>=2015) %>% 
+  group_by(aldur) %>% 
+  summarise(medallengd=mean(lengd)), 
+  caption = "Taflan sýnir aldur og meðallengd hvers aldurshóps karfa miðað við mælingar í haustleiðöngrunum frá árinu 2015 að telja (upp að 33cm).") %>% 
+  kable_styling(font_size = 8) 
+
+  
+```
+
+
+
+*Í töflunni má sjá að þegar karfinn verður 33cm verður sífellt erfiðara að draga ályktanir um aldur hans af út frá lengd.*
+
+\newpage
+
+##Skipting karfa afla eftir skipum og lengd árin 2018-2021
+
+```{r, echo=FALSE}
+artal<- 2018
+leidangur <- length_dist_SMB
+
+lengdarskipting<-leidangur %>% 
+  filter(ar>=artal) %>% 
+  mutate (staerdarflokkar=cut(lengd,c(0,11,14,19,30,33,40,Inf))) %>% 
+  group_by(vessel_id,ar,staerdarflokkar) %>% 
+  #filter(vessel_id==2350) %>% 
+  summarise(sum=round(sum(fjoldi))) %>% 
+  pivot_wider(names_from = staerdarflokkar, values_from=sum)
+
+kable(lengdarskipting,caption = 'Skipting afla eftir skipum og lengdum í vorleiðangri 2018')
+```
+
+
+
+
+```{r, echo=FALSE}
+artal<- 2016
+leidangur <- length_dist_SMH
+
+lengdarskipting<-leidangur %>% 
+  filter(ar>=artal) %>% 
+  mutate (staerdarflokkar=cut(lengd,c(0,11,14,19,30,33,40,Inf))) %>% 
+  group_by(vessel_id,ar,staerdarflokkar) %>%  
+  summarise(sum=round(sum(fjoldi))) %>% 
+  pivot_wider(names_from = staerdarflokkar, values_from=sum) 
+
+
+kable(lengdarskipting, caption='Skipting afla eftir skipum og lengdum í haustleiðangri frá 2016 að telja')
+```
+
+
+
+\newpage 
+
+# Sérstakir útreikningar fyrir Bláa hagkerfið - ekki hluti af skýrslu
+
+
+
+```{r fjoldi_karfa_lengd_haust_Sv1, echo=FALSE, error=FALSE, fig.cap="Lengdardreifing í haustleiðöngrum 2002 - 2007", warning=FALSE}
+
+length_dist_SMH %>% 
+  filter(ar>=2003,ar<=2007) %>% 
+  filter(lengd<=60, lengd>0) %>% 
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=vegid, group=ar, fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity", scale=1, rel_min_height=0.01)+
+  labs(fill="Fjöldi karfa í 
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(0,60)
+```
+
+
+
+```{r fjoldi_karfa_lengd_haust_Sv2, echo=FALSE, error=FALSE, fig.cap="Lengdardreifing í vorleiðöngrum 2002 - 2007", warning=FALSE}
+
+length_dist_SMB %>% 
+  filter(ar>=2003,ar<=2007) %>% 
+  filter(lengd<=60, lengd>0) %>% 
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=vegid, group=ar, fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity", scale=1, rel_min_height=0.01)+
+  labs(fill="Fjöldi karfa í 
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(0,60)
+```
+
+```{r}
+nv<-
+  length_dist_SMH%>% 
+  filter(lengd>11,lengd<24) %>% 
+  filter(ar>=2003,  ar<=2008) %>% 
+  filter(lat>64.5, lon< -20)
+
+
+  
+  nv%>% 
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  arrange(ar,lengd) %>% 
+  summarise(ar, lengd, 
+  sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum)) %>% 
+  ggplot(aes(x=lengd) )+
+  geom_line(aes(y=per, group=as.factor(ar), colour=as.factor(ar))) +
+  labs(colour="ár")+
+  ylab("uppsöfnuð dreifing")
+  
+```
+
+
+```{r fjoldi_gl_lengd_haust_Sv1, echo=FALSE, error=FALSE, fig.cap="Lengdardreifing grálúðu í haustleiðöngrum 2002 - 2007", warning=FALSE}
+
+ghalibut_length_dist_SMH %>% 
+  filter(ar>=2010,ar<=2020) %>% 
+  filter(lengd<=100, lengd>0) %>% 
+  group_by(lengd, ar) %>% 
+  summarise(vegid=sum(fjoldi)) %>% 
+  group_by(ar) %>% 
+  mutate(per=vegid/sum(vegid)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x =lengd,y=as.factor(ar), height=per, group=ar, fill=vegid))+ 
+  geom_density_ridges_gradient(stat="identity",      scale=1,rel_min_height=0.01)+
+  labs(fill="Fjöldi grálúðu í 
+hverjum stærðarflokki")+
+  ylab("ár")+
+  xlim(15,100)
+```
+
+
+```{r, echo=FALSE, warning= FALSE, error=FALSE}
+artal<- 2020
+leidangur <- length_dist_SMB %>% 
+  filter(vessel_id==2350 | vessel_id==1579 |vessel_id==2861)
+
+kable(lengdarskipting<-leidangur %>% 
+  filter(ar>=artal) %>% 
+  mutate (staerdarflokkar=cut(lengd,c(0,11,14,19,30,33,40,Inf))) %>% 
+  group_by(vessel_id,ar,staerdarflokkar) %>% 
+  summarise(sum=round(sum(fjoldi))) %>% 
+  pivot_wider(names_from = staerdarflokkar, values_from=sum) ,
+  caption='Skipting fjölda karfa eftir stærð á skip í vorleiðöngrum ') %>% 
+  kable_styling(font_size = 8) %>% 
+  kable_styling(latex_options="HOLD_position")
+
+
+
+```
+
+### Vangvaveltur um dreifingar
+
+
+```{r, fig.cap="Myndin sýnir uppsafnaða dreifingu karfa úr vorleiðöngrum sem er 20-40cm á árunum 2011 - 2021", echo=FALSE, warning=FALSE, error=FALSE}
+nv<-
+  length_dist_SMB%>% 
+  filter(lengd>4,lengd<40) %>% 
+  filter(ar==2021) %>% 
+  filter(lat>64.5, lon< -20)
+
+
+
+  
+  nv%>% 
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  arrange(ar,lengd) %>% 
+  summarise(ar, lengd, 
+  sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum)) %>% 
+  ggplot(aes(x=lengd) )+
+  geom_line(aes(y=per, group=as.factor(ar), colour=as.factor(ar))) +
+  labs(colour="ár")+
+  ylab("uppsöfnuð dreifing")
+  
+ nv_freq<- 
+   nv%>%
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>% 
+  arrange(ar,lengd)
+ 
+ 
+ 
+ nv_freq
+
+
+
+
+
+```
+
+### Safnið leiðrétt fyrir torfumyndun með aðferð Winsor
+
+```{r, fig.cap="Myndin sýnir uppsafnaða dreifingu karfa úr vorleiðöngrum sem er 20cm eða styttri á árunum 2015 - 2021", warning=FALSE, echo=FALSE, error=FALSE}
+
+max_lengd<-60
+min_lengd<-11
+
+nv<-
+  length_dist_SMB%>% 
+  filter(lengd>=min_lengd, lengd<=max_lengd)%>% 
+  filter(ar>=2015) %>% 
+  filter(lat>64.5, lon< -20)
+
+quantile_table <- nv %>% 
+group_by (ar, station) %>% 
+summarise(sum_fjoldi=sum(fjoldi)) %>% 
+mutate(max_fjoldi=max(sum_fjoldi), 
+       quantile=quantile(sum_fjoldi,0.75, na.rm = TRUE))
+
+quantile_table
+
+nv  %>% 
+  left_join(quantile_table) %>% 
+  mutate(fjoldi=ifelse(sum_fjoldi<=quantile,
+                fjoldi,fjoldi*quantile/sum_fjoldi)) %>% 
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>%
+  arrange(ar,lengd) %>% 
+  summarise(ar, lengd, 
+  sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum)) %>% 
+  ggplot(aes(x=lengd) )+
+  geom_line(aes(y=per, group=as.factor(ar), colour=as.factor(ar))) +
+  labs(colour="ár")+
+  ylab("uppsöfnuð dreifing ")   
+    
+    
+    
+    
+# nv%>% 
+# group_by(ar,lengd) %>% 
+# summarise(sum_fjoldi=sum(fjoldi)) %>%
+# arrange(ar,lengd) %>% 
+# summarise(ar, lengd, 
+# sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum)) %>% 
+# ggplot(aes(x=lengd) )+
+# geom_line(aes(y=per, group=as.factor(ar), colour=as.factor(ar))) +
+# labs(colour="ár")+
+# ylab("uppsöfnuð dreifing ")
+  
+
+```
+
+### winsoreruðu safni skilað í excel til undirbúnings fyrir gb-regression in python
+
+```{r}
+
+nv  %>% 
+  left_join(quantile_table) %>% 
+  mutate(fjoldi=ifelse(sum_fjoldi<=quantile,
+                fjoldi,fjoldi*quantile/sum_fjoldi)) %>% 
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>%
+  arrange(ar,lengd) %>% 
+  summarise(ar, lengd, 
+  sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum)) %>% 
+  write.csv("C:\\Users\\Lenovo\\ownCloud\\Radgjof\\Ráðgjöf\\Bláa hagkerfið\\Hafró\\distribution_output\\distribution.csv",
+          row.names = FALSE
+          )
+
+
+nv  %>% 
+  left_join(quantile_table) %>% 
+  mutate(fjoldi=ifelse(sum_fjoldi<=quantile,
+                fjoldi,fjoldi*quantile/sum_fjoldi)) %>% 
+  group_by(ar,lengd) %>% 
+  summarise(sum_fjoldi=sum(fjoldi)) %>%
+  arrange(ar,lengd) %>% 
+  summarise(ar, lengd, 
+  sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum))
+
+```
+
+# Safn sótt í excel eftir gb-regression og mynd með spá prentuð út.
+
+```{r}
+library(readr)
+distribution_forecast <- read_delim("C:/Users/Lenovo/ownCloud/Radgjof/Ráðgjöf/Bláa hagkerfið/Hafró/distribution_output/distribution_forecast.csv", 
+    ",", escape_double = FALSE, trim_ws = TRUE)
+
+distribution_forecast %>% 
+  ggplot(aes(x=lengd) )+
+  geom_line(aes(y=per, group=as.factor(ar), colour=as.factor(ar))) +
+  labs(colour="ár")+
+  ylab("uppsöfnuð dreifing ") 
+
+
+distribution_forecast 
+```
+
+
+# Sameining haust og vormælinga
+
+```{r}
+
+```
+
+
