@@ -116,18 +116,7 @@ temp_summary<-deep_weighted_temp_by_year%>%
   summarize(temp=mean(weighted_temp))
   
   
-  
-#Búa til distribution töflu með landshlutum, hitastigi etc
 
-deep_distribution%>% 
-  left_join(deep_quantile_table) %>%
-  mutate(fjoldi=ifelse(sum_fjoldi<=quantile,fjoldi,fjoldi*quantile/sum_fjoldi)) %>%
-  group_by(ar,lengd) %>% 
-  summarise(sum_fjoldi=sum(fjoldi)) %>%
-  left_join(deep_sumfjoldi) %>%
-  arrange(ar,lengd) %>% 
-  reframe(ar, lengd, bottom_temp, NW, NE, SW, SE, fjoldi, sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per=cum/max(cum),per_length) %>% 
-  write.csv("C:/Ráðgjöf/Maris Optimum/distributionoutput/deep_distribution.csv", row.names = FALSE)
 
 #Búa til töflu sem líkist gömlu distribution + fractile töflunum... sendi beint í gr_data möppuna
 
@@ -143,14 +132,3 @@ deep_distribution%>%
   reframe(ar, lengd, sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per_length, per=cum/max(cum),temp) %>% 
   write.csv("C:/Ráðgjöf/Maris Optimum/gr_data/distribution101.csv", row.names = FALSE)
 
-
-
-distribution101<-deep_distribution%>% 
-  left_join(deep_quantile_table) %>%
-  left_join(deep_sumfjoldi) %>%
-  mutate(fjoldi=ifelse(sum_fjoldi<=quantile,fjoldi,fjoldi*quantile/sum_fjoldi)) %>%
-  group_by(ar,lengd) %>% 
-  summarise(sum_fjoldi=sum(fjoldi)) %>%
-  left_join(deep_sumfjoldi) %>%
-  arrange(ar,lengd) %>%
-  reframe(ar, lengd, sum_fjoldi,cum=cumsum(sum_fjoldi), max(cum), per_length, per=cum/max(cum))
